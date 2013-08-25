@@ -25,7 +25,3 @@ The [options](https://developers.google.com/freebase/v1/search-widget#configurat
 
 ## Additional authors
 * Dae Park (daepark@google.com) Built the original JavaScript version this project is derived from.
-<!--- This project received help from: -->
-
-<!--- * Lastname Firstname <firstname.lastname@domain.com> -->
-
