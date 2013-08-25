@@ -1,0 +1,10 @@
+name: freebase_searchwidget
+version: 0.0.1
+author: Günter Zöchbauer
+description: Port of Freebase Suggest 4.2 Javascript code to Dart
+dependencies:
+  polymer: any
+  animation: any
+
+dev_dependencies:
+  unittest: any

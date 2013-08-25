@@ -1,0 +1,22 @@
+<html>
+	<head>
+		<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/freebase/suggest/4_2/suggest.min.css" />
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script>
+		<!--<script type="text/javascript" src="https://www.gstatic.com/freebase/suggest/4_2/suggest.min.js"></script>-->
+		<script type="text/javascript" src="suggest.js"></script>
+	</head>
+
+	<body>
+		<input type="text" id="myinput" style='position: absolute; right:0px;' />
+		<script type="text/javascript">
+			$(function() {
+				//$("#myinput").suggest({filter:'(all type:/film/director)'});
+				$("#myinput").suggest({key: "AIzaSyCGcQIahaw_mGvvx_XbFxDjyc_SEEdgAMc",
+                                filter:'(all domain:/film)',
+                                lang: "de,en",
+                                animate: true}
+                                );
+			});
+		</script>
+
+	</body>
