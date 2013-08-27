@@ -46,22 +46,24 @@
 
 library freebase_searchwidget;
 
-import 'dart:html';
-import 'dart:async';
-import 'dart:convert';
+import "dart:html";
+import "dart:async";
+import "dart:convert";
 
-import 'package:polymer/polymer.dart';
-//import 'package:observe/observe.dart';
-import 'package:animation/animation.dart';
+import "package:polymer/polymer.dart";
+import "package:animation/animation.dart";
+import "package:meta/meta.dart";
 
-part '../src/data.dart';
-part '../src/status_enum.dart';
-part '../src/cssoption.dart';
-part '../src/acparam.dart';
-part '../src/option.dart';
-part '../src/htmltools.dart';
+part "../src/data.dart";
+part "../src/status_enum.dart";
+part "../src/cssoption.dart";
+part "../src/acparam.dart";
+part "../src/option.dart";
+part "../src/model.dart";
+part "../src/htmltools.dart";
 
-@CustomTag('freebase-searchwidget')
+
+@CustomTag("freebase-searchwidget")
 class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
 // TODO check if that or maybe a part of it is necessary/useful in Dart
@@ -112,110 +114,135 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
    * These are the search parameters that are transparently passed
    * to the search service as specified by service_url + service_path
    */
-  Map SEARCH_PARAMS = {
-    'key':1,
-    'filter':1,
-    'spell':1,
-    'exact':1,
-    'lang':1,
-    'scoring':1,
-    'prefixed':1,
-    'stemmed':1,
-    'format':1,
-    'mql_output':1,
-    'output':1
+  Map _SEARCH_PARAMS = {
+    "key":1,
+    "filter":1,
+    "spell":1,
+    "exact":1,
+    "lang":1,
+    "scoring":1,
+    "prefixed":1,
+    "stemmed":1,
+    "format":1,
+    "mql_output":1,
+    "output":1
   };
 
   @observable
-  String value = '';
+  String value = "";
 
   @observable
-  String options = '';
+  String options = "";
 
   Option _options = new Option.defaults();
   Map<String,String> _status;
-  Point _position;
+  Point _currentPosition;
 
-  bool doScrollIgnoreMouseover;
-  StreamSubscription scrollIgnoreMouseover;
-  String flyout_url;
-  String flyout_image_url;
-  Map<String,String> cache;
-  Map<String,Data> flyoutCache;
-  Map not_char;
+  bool _doScrollIgnoreMouseover;
+  StreamSubscription _scrollIgnoreMouseover;
+  String _flyoutUrl;
+  String _flyoutImageUrl;
+  Map<String,String> _cache;
+  Map<String,Data> _flyoutCache;
+  //Map not_char;
 
-  DivElement statusElement;
-  UListElement listElement;
-  DivElement paneElement;
-  DivElement flyoutpaneElement;
-  InputElement inputElement;
+  DivElement _statusElement;
+  UListElement _listElement;
+  DivElement _paneElement;
+  DivElement _flyoutpaneElement;
+  InputElement _inputElement;
 
-  StreamSubscription paneMouseDown;
-  StreamSubscription paneMouseUp;
-  StreamSubscription paneClick;
-  StreamSubscription inputKeyDown;
-  StreamSubscription inputKeyPress;
-  StreamSubscription inputKeyPressDeleyed;
-  StreamSubscription inputKeyUp;
-  StreamSubscription inputBlur;
-  StreamSubscription inputTextChange;
-  StreamSubscription inputFocus;
-  StreamSubscription inputPaste;
-  StreamSubscription inputPasteDelayed;
-  StreamSubscription windowResize;
-  StreamSubscription windowScroll;
-  StreamSubscription listMouseOver;
-  StreamSubscription listMouseOut;
-  StreamSubscription nomatchClick;
-  StreamSubscription spellLinkClick;
-  StreamSubscription moreLinkClick;
-  StreamSubscription suggestNewClick;
-  StreamSubscription flyoutpaneMouseOver;
-  StreamSubscription flyoutpaneMouseOut;
-  StreamSubscription flyoutpaneMouseDown;
+  StreamSubscription _paneMouseDown;
+  StreamSubscription _paneMouseUp;
+  StreamSubscription _paneClick;
+  StreamSubscription _inputKeyDown;
+  StreamSubscription _inputKeyPress;
+  StreamSubscription _inputKeyPressDelayed;
+  StreamSubscription _inputKeyUp;
+  StreamSubscription _inputBlur;
+  StreamSubscription _inputTextChange;
+  StreamSubscription _inputFocus;
+  StreamSubscription _inputPaste;
+  StreamSubscription _inputPasteDelayed;
+  StreamSubscription _windowResize;
+  StreamSubscription _windowScroll;
+  StreamSubscription _listMouseOver;
+  StreamSubscription _listMouseOut;
+  StreamSubscription _nomatchClick;
+  StreamSubscription _spellLinkClick;
+  StreamSubscription _moreLinkClick;
+  StreamSubscription _suggestNewClick;
+  StreamSubscription _flyoutpaneMouseOver;
+  StreamSubscription _flyoutpaneMouseOut;
+  StreamSubscription _flyoutpaneMouseDown;
 
-  List<StreamSubscription> subscriptions;
-  var paste_timeout;
-  var onresize;
+  List<StreamSubscription> _subscriptions;
+  //var _pasteTimeout;
+  var _onresize;
 
-  //created() { // Debug providing options using custom attrib
-  init() {
-    super.created();
+  // fires on every keypress not only when input looses focus
+  static EventStreamProvider<CustomEvent> onFbTextChange = new EventStreamProvider<CustomEvent>("fb-textchange");
+  static EventStreamProvider<CustomEvent> onFbPaneShow = new EventStreamProvider<CustomEvent>("fb-pane-show");
+  static EventStreamProvider<CustomEvent> onFbPaneHide = new EventStreamProvider<CustomEvent>("fb-pane-hide");
+  static EventStreamProvider<CustomEvent> onFbSelect = new EventStreamProvider<CustomEvent>("fb-select");
+  static EventStreamProvider<CustomEvent> onFbTrackEvent = new EventStreamProvider<CustomEvent>("fb-track-event");
+  static EventStreamProvider<CustomEvent> onFbFlyoutPaneHide = new EventStreamProvider<CustomEvent>("fb-flyoutpane-hide");
+  static EventStreamProvider<CustomEvent> onFbFlyoutPaneShow = new EventStreamProvider<CustomEvent>("fb-flyoutpane-show");
+  static EventStreamProvider<CustomEvent> onFbError = new EventStreamProvider<CustomEvent>("fb-error");
+  static EventStreamProvider<CustomEvent> onFbSelectNew = new EventStreamProvider<CustomEvent>("fb-select-new");
+  static EventStreamProvider<CustomEvent> onFbRequestFlyout = new EventStreamProvider<CustomEvent>("fb-request-flyout");
 
-    subscriptions = [ this.paneMouseDown,
-                      this.paneMouseUp,
-                      this.paneClick,
-                      this.inputKeyDown,
-                      this.inputKeyPress,
-                      this.inputKeyPressDeleyed,
-                      this.inputKeyUp,
-                      this.inputBlur,
-                      this.inputTextChange,
-                      this.inputFocus,
-                      this.inputPaste,
-                      this.inputPasteDelayed,
-                      this.windowResize,
-                      this.windowScroll,
-                      this.listMouseOver,
-                      this.listMouseOut,
-                      this.nomatchClick,
-                      this.spellLinkClick,
-                      this.moreLinkClick,
-                      this.suggestNewClick,
-                      this.flyoutpaneMouseOver,
-                      this.flyoutpaneMouseOut,
-                      this.flyoutpaneMouseDown];
+  static EventStreamProvider<CustomEvent> _onTextChange = new EventStreamProvider<CustomEvent>("textchange");
 
-    this.inputElement = shadowRoot.query('#inputElement');
+
+@override
+created() {
+  super.created();
+  //shadowRoot.applyAuthorStyles = true;
+}
+  
+@override
+inserted() { 
+    super.inserted();
+
+    _subscriptions = [ this._paneMouseDown,
+                      this._paneMouseUp,
+                      this._paneClick,
+                      this._inputKeyDown,
+                      this._inputKeyPress,
+                      this._inputKeyPressDelayed,
+                      this._inputKeyUp,
+                      this._inputBlur,
+                      this._inputTextChange,
+                      this._inputFocus,
+                      this._inputPaste,
+                      this._inputPasteDelayed,
+                      this._windowResize,
+                      this._windowScroll,
+                      this._listMouseOver,
+                      this._listMouseOut,
+                      this._nomatchClick,
+                      this._spellLinkClick,
+                      this._moreLinkClick,
+                      this._suggestNewClick,
+                      this._flyoutpaneMouseOver,
+                      this._flyoutpaneMouseOut,
+                      this._flyoutpaneMouseDown];
+
+    this._inputElement = shadowRoot.query("#inputElement");
 
     // Debug providing options using custom attrib
-    //String optionsJson = shadowRoot.query('#optons').text;
-    //SpanElement so = shadowRoot.query('#options');
+    //String optionsJson = shadowRoot.query("#optons").text;
+    //SpanElement so = shadowRoot.query("#options");
     //String optionsJson = so.text;
     //this._options = new Option.fromJson(optionsJson);
     this._options = new Option.fromJson(options); // TODO doesn't work due to bug #12262
 
     Option o = this._options;
+    if (o.key == null) {
+      print("Options must contain a value for key.");
+      return;
+    }
 
     CssOption css = o.css;
 
@@ -229,7 +256,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     if (o.acParam.lang != null) {
       var lang = o.acParam.lang;
       if (lang is List && lang.length > 0) {
-        lang = lang.join(',');
+        lang = lang.join(",");
       }
       if (lang != null) {
         o.flyoutLang = lang;
@@ -238,36 +265,36 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
     // status texts
     this._status = {
-      Status.START: '',
-      Status.LOADING: '',
-      Status.SELECT: '',
-      Status.ERROR: ''
+      "START": "", //Status.START: "",
+      "LOADING": "", //Status.LOADING: "",
+      "SELECT": "", //Status.SELECT: "",
+      "ERROR": "" //Status.ERROR: ""
     };
 
     if ((o.status != null) && (o.status is List) && (o.status.length >= 3)) {
-      this._status[Status.START] = o.status[0] != null ? o.status[0] : '';
-      this._status[Status.LOADING] = o.status[1] != null ? o.status[1] : '';
-      this._status[Status.SELECT] = o.status[2] != null ? o.status[2] : '';
+      this._status[Status.START] = o.status[0] != null ? o.status[0] : "";
+      this._status[Status.LOADING] = o.status[1] != null ? o.status[1] : "";
+      this._status[Status.SELECT] = o.status[2] != null ? o.status[2] : "";
       if (o.status.length == 4) {
-        this._status[Status.ERROR] = o.status[3] != null ? o.status[3] : '';
+        this._status[Status.ERROR] = o.status[3] != null ? o.status[3] : "";
       }
     }
 
     // create the container for the drop down list
     var s = new DivElement();
-    s.style.display = 'none';
+    s.style.display = "none";
     s.classes.add(css.status);
     var l = new UListElement();
     l.classes.add(css.list);
     var p = new DivElement();
-    p.style.display = 'none';
+    p.style.display = "none";
     p.classes
-      ..add('fbs-reset')
+      ..add("fbs-reset")
       ..add(css.pane);
 
-    this.statusElement = s;
-    this.listElement = l;
-    this.paneElement = p;
+    this._statusElement = s;
+    this._listElement = l;
+    this._paneElement = p;
 
     p
       ..append(s)
@@ -278,175 +305,176 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       o.parent.append(p);
     }
     else {
-      p.style.position = 'absolute';
+      p.style.position = "absolute";
       if (o.zIndex != null) {
         p.style.zIndex = o.zIndex.toString();
       }
       document.body.append(p);
     }
-    this.paneMouseDown = p.onMouseDown.listen((e) {
+    this._paneMouseDown = p.onMouseDown.listen((e) {
       //console.log("pane mousedown");
-      this.inputElement.dataset['dont_hide'] = 'true';
+      this._inputElement.dataset["dont_hide"] = "true";
       e.stopPropagation();
     });
 
-    this.paneMouseUp = p.onMouseUp.listen((e) {
+    this._paneMouseUp = p.onMouseUp.listen((e) {
       //console.log("pane mouseup");
-      if (this.inputElement.dataset['dont_hide'] == 'true') {
-        this.inputElement.focus();
+      if (this._inputElement.dataset["dont_hide"] == "true") {
+        this._inputElement.focus();
       }
-      this.inputElement.dataset.remove('dont_hide');
+      this._inputElement.dataset.remove("dont_hide");
       e.stopPropagation();
     });
 
-    this.paneClick = p.onClick.listen((e) {
+    this._paneClick = p.onClick.listen((e) {
       //console.log("pane click");
       e.stopPropagation();
-      var s = this.get_selected();
+      var s = this._getSelected();
       if (s != null) {
-        this.onselect(s);
-        this.hide_all();
+        this._onSelect(s);
+        this._hideAll();
       }
     });
 
-    listMouseOver = l.onMouseOver.listen((e) => this.hoverover_list(e));
-    listMouseOut = l.onMouseOut.listen((e) => this.hoverout_list());
+    _listMouseOver = l.onMouseOver.listen((e) => this._hoveroverList(e));
+    _listMouseOut = l.onMouseOut.listen((e) => this._hoveroutList());
     //console.log(this.pane, this.list);
 
-    this.inputElement.autocomplete = 'off';
+    this._inputElement.autocomplete = "off";
 
-    this.inputKeyDown = this.inputElement.onKeyDown.listen((e) => this.keydown(e));
-    this.inputKeyPress = this.inputElement.onKeyPress.listen((e) => this.keypress(e));
-    this.inputKeyPress = this.inputElement.onKeyUp.listen((e) => this.keyup(e));
-    this.inputBlur = this.inputElement.onBlur.listen((e) => this.blurx(e));
-    this.inputTextChange = this.inputElement.onChange.listen((e) => this.textchange());
-    this.inputFocus = this.inputElement.onFocus.listen((e) => this.focusx(e));
-    this.inputPaste = this.inputElement.onPaste.listen((e) {
+    this._inputKeyDown = this._inputElement.onKeyDown.listen((e) => this._keyDown(e));
+    this._inputKeyPress = this._inputElement.onKeyPress.listen((e) => this._keyPress(e));
+    this._inputKeyPress = this._inputElement.onKeyUp.listen((e) => this._keyUp(e));
+    this._inputBlur = this._inputElement.onBlur.listen((e) => this._blur(e));
+    //this._inputTextChange = this._inputElement.onChange.listen((e) => this._textChange());
+    this._inputTextChange = _onTextChange.forTarget(this).listen((e) => this._textChange());
+    this._inputFocus = this._inputElement.onFocus.listen((e) => this._focus(e));
+    this._inputPaste = this._inputElement.onPaste.listen((e) {
 //        .bind($.browser.msie ? "paste.suggest" : "input.suggest", function(e)) { // TODO makes Dart this dinguishion automatically
-        if(this.inputPasteDelayed != null) {
-          this.inputPasteDelayed.cancel();
+        if(this._inputPasteDelayed != null) {
+          this._inputPasteDelayed.cancel();
         }
         var future = new Future.delayed(const Duration(milliseconds: 0));
-        this.inputPasteDelayed = future.asStream().listen(this.textchange());
+        this._inputPasteDelayed = future.asStream().listen(this._textChange());
     });
 
     // resize handler
-    this.onresize = (e) {
-      this.invalidate_position();
+    this._onresize = (e) {
+      this._invalidatePosition();
       if (HtmlTools.isVisible(p)) {
-        this.position();
-        if (o.flyout != null && this.flyoutpaneElement != null && HtmlTools.isVisible(this.flyoutpaneElement)) {
-          var s = this.get_selected();
+        this._position();
+        if (o.flyout != null && this._flyoutpaneElement != null && HtmlTools.isVisible(this._flyoutpaneElement)) {
+          var s = this._getSelected();
           if (s != null) {
-            this.flyout_position(s);
+            this._flyoutPosition(s);
           }
         }
       }
     };
 
-    windowResize = window.onResize.listen(this.onresize);
-    windowScroll = window.onScroll.listen(this.onresize);
+    _windowResize = window.onResize.listen(this._onresize);
+    _windowScroll = window.onScroll.listen(this._onresize);
 
     _init();
   }
 
 
-  invalidate_position() {
-    this._position = null;
+  _invalidatePosition() {
+    this._currentPosition = null;
   }
 
-  status_start() {
-    this.hide_all();
-    HtmlTools.siblings(this.statusElement).forEach((e) => HtmlTools.hideElement(e));
+  _statusStart() {
+    this._hideAll();
+    HtmlTools.siblings(this._statusElement).forEach((e) => HtmlTools.hideElement(e));
 
     if (this._status[Status.START] != null) {
-      this.statusElement.text = this._status[Status.START];
-      HtmlTools.showElement(this.statusElement);
-      if (!HtmlTools.isVisible(this.paneElement)) {
-        this.position();
-        this.pane_show();
+      this._statusElement.text = this._status[Status.START];
+      HtmlTools.showElement(this._statusElement);
+      if (!HtmlTools.isVisible(this._paneElement)) {
+        this._position();
+        this._paneShow();
       }
     }
     if (this._status[Status.LOADING] != null) {
-      this.statusElement.classes.remove('loading');
+      this._statusElement.classes.remove("loading");
     }
   }
 
 
-  status_loading() {
-    HtmlTools.siblings(this.statusElement).forEach((e) => HtmlTools.showElement(e));
+  _statusLoading() {
+    HtmlTools.siblings(this._statusElement).forEach((e) => HtmlTools.showElement(e));
 
     if (this._status[Status.LOADING] != null) {
-      this.statusElement
-        ..classes.add('loading')
+      this._statusElement
+        ..classes.add("loading")
         ..text = this._status[Status.LOADING];
-      HtmlTools.showElement(this.statusElement);
+      HtmlTools.showElement(this._statusElement);
 
-      if (!HtmlTools.isVisible(this.paneElement)) {
-        this.position();
-        this.pane_show();
+      if (!HtmlTools.isVisible(this._paneElement)) {
+        this._position();
+        this._paneShow();
       }
     }
     else {
-      HtmlTools.hideElement(this.statusElement);
+      HtmlTools.hideElement(this._statusElement);
     }
   }
 
-  status_select() {
-    HtmlTools.siblings(this.statusElement).forEach((e) => HtmlTools.showElement(e));
+  _statusSelect() {
+    HtmlTools.siblings(this._statusElement).forEach((e) => HtmlTools.showElement(e));
 
     if (this._status[Status.SELECT] != null) {
-      this.statusElement.text = this._status[Status.SELECT];
-      HtmlTools.showElement(this.statusElement);
+      this._statusElement.text = this._status[Status.SELECT];
+      HtmlTools.showElement(this._statusElement);
     }
     else {
-      HtmlTools.hideElement(this.statusElement);
+      HtmlTools.hideElement(this._statusElement);
     }
     if (this._status[Status.LOADING] != null) {
-      this.statusElement.classes.remove('loading');
+      this._statusElement.classes.remove("loading");
     }
   }
 
-  status_error() {
-    HtmlTools.siblings(this.statusElement).forEach((e) => HtmlTools.showElement(e));
+  _statusError() {
+    HtmlTools.siblings(this._statusElement).forEach((e) => HtmlTools.showElement(e));
     if (this._status[Status.ERROR] != null) {
-      this.statusElement.text = this._status[Status.ERROR];
-      HtmlTools.showElement(this.statusElement);
+      this._statusElement.text = this._status[Status.ERROR];
+      HtmlTools.showElement(this._statusElement);
     }
     else {
-      HtmlTools.hideElement(this.statusElement);
+      HtmlTools.hideElement(this._statusElement);
     }
     if (this._status[Status.LOADING] != null ) {
-      this.statusElement.classes.remove('loading');
+      this._statusElement.classes.remove("loading");
     }
   }
 
-  focusx(e) {
-    //console.log("focusx", this.input.val() === "");
+  _focus(e) {
+    //console.log("_focus", this.input.val() === "");
 
-    if (this.inputElement.value == '') {
-      this.status_start();
+    if (this._inputElement.value == "") {
+      this._statusStart();
     }
     else {
-      this.focus_hook(e);
+      this._focusHook(e);
     }
   }
 
   // override to be notified on focus and input has a value
-  focus_hook(e) {
-    //console.log("focus_hook", this.input.data("data.suggest"));
-    if((this.inputElement.dataset.length > 0) &&
-        (!HtmlTools.isVisible(this.paneElement)) &&
-        (this.listElement.queryAll('.' + this._options.css.item).length > 0)) { // TODO this.list
-      this.position();
-      this.pane_show();
+  _focusHook(e) {
+    //console.log("_focusHook", this.input.data("data.suggest"));
+    if((this._inputElement.dataset.length > 0) &&
+        (!HtmlTools.isVisible(this._paneElement)) &&
+        (this._listElement.queryAll("." + this._options.css.item).length > 0)) { // TODO this.list
+      this._position();
+      this._paneShow();
     }
   }
 
-  keydown(e) {
+  _keyDown(e) {
     var key = e.keyCode;
     if (key == KeyCode.TAB) { // tab
-      this.tab(e);
+      this._tab(e);
     }
     else if (key == KeyCode.UP || key == KeyCode.DOWN) { // up/down
       if (!e.shiftKey) {
@@ -456,7 +484,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     }
   }
 
-  keypress(e) {
+  _keyPress(e) {
     var key = e.keyCode;
     if (key == KeyCode.UP || key == KeyCode.DOWN) { // up/down
       if (!e.shiftKey) {
@@ -465,91 +493,91 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       }
     }
     else if (key == KeyCode.ENTER) { // enter
-      this.enter(e);
+      this._enter(e);
     }
   }
 
-  keyup(e) {
+  _keyUp(e) {
     var key = e.keyCode;
-    //console.log("keyup", key);
+    //console.log("_keyUp", key);
     if (key == KeyCode.UP) { // up
       e.preventDefault();
-      this.up(e);
+      this._up(e);
     }
     else if (key == KeyCode.DOWN) { // down
       e.preventDefault();
-      this.down(e);
+      this._down(e);
     }
     else if (e.ctrlKey && key == KeyCode.M) { // 77
-      this.paneElement.query('.fbs-more-link').click();
+      this._paneElement.query(".fbs-more-link").click();
     }
-    else if (this.is_char(e) || e.keyCode == KeyCode.BACKSPACE || e.keyCode == KeyCode.DELETE) {
-      //this.textchange();
-      if(this.inputKeyPressDeleyed != null) {
-        this.inputKeyPressDeleyed.cancel();
+    else if (this._isChar(e) || e.keyCode == KeyCode.BACKSPACE || e.keyCode == KeyCode.DELETE) {
+      //this._textChange();
+      if(this._inputKeyPressDelayed != null) {
+        this._inputKeyPressDelayed.cancel();
       }
       var future = new Future.delayed(const Duration(milliseconds: 0));
-      this.inputKeyPressDeleyed = future.asStream().listen(this.textchange());
+      this._inputKeyPressDelayed = future.asStream().listen(this._textChange());
     }
     else if (key == KeyCode.ESC) {
-      // escape - WebKit doesn't fire keypress for escape
-      this.escape(e);
+      // _escape - WebKit doesn't fire keypress for _escape
+      this._escape(e);
     }
     return true;
   }
 
-  blurx(e) { // x to prevent overriding method of the base class
+  _blur(e) { // x to prevent overriding method of the base class
     //console.log("blur", "dont_hide", this.input.data("dont_hide"),
     //            "data.suggest", this.input.data("data.suggest"));
-    if (this.inputElement.dataset['dont_hide'] != null) {
+    if (this._inputElement.dataset["dont_hide"] != null) {
       return;
     }
-    var data = new Data.fromJson(this.inputElement.dataset['data']);
-    this.hide_all();
+    var data = new Data.fromJson(this._inputElement.dataset["data"]);
+    this._hideAll();
   }
 
-  tab(e) {
+  _tab(e) {
     if (e.shiftKey || e.metaKey || e.ctrlKey) {
       return;
     }
 
     var o = this._options;
-    var visible = HtmlTools.isVisible(this.paneElement) &&
-      this.listElement.queryAll('.' + o.css.item).length > 0;
-    var s = this.get_selected();
+    var visible = HtmlTools.isVisible(this._paneElement) &&
+      this._listElement.queryAll("." + o.css.item).length > 0;
+    var s = this._getSelected();
 
-    //console.log("tab", visible, s);
+    //console.log("_tab", visible, s);
 
-    if (visible && s) {
-      this.onselect(s);
-      this.hide_all();
+    if (visible && s != null) {
+      this._onSelect(s);
+      this._hideAll();
     }
   }
 
-  enter(e) {
+  _enter(e) {
     var o = this._options;
-    var visible = HtmlTools.isVisible(this.paneElement);
+    var visible = HtmlTools.isVisible(this._paneElement);
 
-    //console.log("enter", visible);
+    //console.log("_enter", visible);
 
     if (visible) {
       if (e.shiftKey) {
-        this.shift_enter(e);
+        this._shiftEnter(e);
         e.preventDefault();
         return;
       }
-      else if (this.listElement.queryAll('.' + o.css.item).length > 0) {
-        var s = this.get_selected();
+      else if (this._listElement.queryAll("." + o.css.item).length > 0) {
+        var s = this._getSelected();
         if (s) {
-          this.onselect(s);
-          this.hide_all();
+          this._onSelect(s);
+          this._hideAll();
           e.preventDefault();
           return;
         }
         else if (o.soft == null) {
-          var data = new Data.fromJson(this.inputElement.dataset['data']);
-          if (this.listElement.queryAll('.' + this._options.css.item + ':visible').length > 0) {
-            this.updown(false);
+          var data = new Data.fromJson(this._inputElement.dataset["data"]);
+          if (this._listElement.queryAll("." + this._options.css.item + ":visible").length > 0) {
+            this._upDown(false);
             e.preventDefault();
             return;
           }
@@ -558,43 +586,43 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     }
     if (o.soft != null) {
       // submit form
-      this.soft_enter();
+      this._softEnter();
     }
     else {
       e.preventDefault();
     }
   }
 
-  soft_enter([e]) {}
+  _softEnter([e]) {}
 
-  escape(e) {
-    this.hide_all();
+  _escape(e) {
+    this._hideAll();
   }
 
-  up(e) {
-    //console.log("up");
-    this.updown(true, e.ctrlKey || e.shiftKey);
+  _up(e) {
+    //console.log("_up");
+    this._upDown(true, e.ctrlKey || e.shiftKey);
   }
 
-  down(e) {
-    //console.log("up");
-    this.updown(false, null, e.ctrlKey || e.shiftKey);
+  _down(e) {
+    //console.log("_down");
+    this._upDown(false, null, e.ctrlKey || e.shiftKey);
   }
 
-  updown(goup, [gofirst = false, golast = false]) {
-    //console.log("updown", goup, gofirst, golast);
+  _upDown(goup, [gofirst = false, golast = false]) {
+    //console.log("_upDown", goup, gofirst, golast);
     var o = this._options,
         css = o.css,
-        p = this.paneElement,
-        l = this.listElement;
+        p = this._paneElement,
+        l = this._listElement;
 
     if (!HtmlTools.isVisible(p)) {
       if (!goup) {
-        this.textchange();
+        this._textChange();
       }
       return;
     }
-    LIElement li = l.query('.' + css.item + ':visible'); // TODO l
+    LIElement li = l.query("." + css.item + ":visible"); // TODO l
 
     if (li.children.length == 0) {
       return;
@@ -602,16 +630,16 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
     var first = li.children[0];
     var last = li.children[li.children.length - 1];
-    var cur = this.get_selected();
+    var cur = this._getSelected();
     if (cur == null) {
       cur = [];
     }
 
-    if(this.scrollIgnoreMouseover != null) {
-      this.scrollIgnoreMouseover.cancel();
+    if(this._scrollIgnoreMouseover != null) {
+      this._scrollIgnoreMouseover.cancel();
     }
 
-    this.doScrollIgnoreMouseover = false;
+    this._doScrollIgnoreMouseover = false;
 
     if (goup) {//up
       if (gofirst) {
@@ -622,11 +650,12 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       }
       else if (cur[0] == first[0]) {
         first.classes.remove(css.selected);
-        this.inputElement.value = this.inputElement.dataset['original'];
-        this.hoverout_list();
+        this._inputElement.value = this._inputElement.dataset["original"];
+        this.value = this._inputElement.value;
+        this._hoveroutList();
       }
       else {
-        var prev = HtmlTools.prevSiblings(document.query('.' + css.item + ':visible:first'));
+        var prev = HtmlTools.prevSiblings(document.query("." + css.item + ":visible:first"));
         this._goto(prev);
       }
     }
@@ -639,11 +668,12 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       }
       else if (cur[0] == last[0]) {
         last.classes.remove(css.selected);
-        this.inputElement.value = this.inputElement.dataset['original'];
-        this.hoverout_list();
+        this._inputElement.value = this._inputElement.dataset["original"];
+        this.value = this._inputElement.value;
+        this._hoveroutList();
       }
       else {
-        var next = HtmlTools.nextSiblings(document.query('.' + css.item + ':visible:first'));
+        var next = HtmlTools.nextSiblings(document.query("." + css.item + ":visible:first"));
         this._goto(next);
       }
     }
@@ -651,52 +681,54 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
   _goto(LIElement li) {
 
-    li.dispatchEvent(new MouseEvent('mouseover'));
-    var d = JSON.decode(li.dataset['data']);
-    this.inputElement.value = (d != null ? d.name : this.inputElement.dataset['original']);
-    this.scroll_to(li);
+    li.dispatchEvent(new MouseEvent("mouseover"));
+    var d = JSON.decode(li.dataset["data"]);
+    this._inputElement.value = (d != null ? d.name : this._inputElement.dataset["original"]);
+    this.value = this._inputElement.value;
+    this._scrollTo(li);
   }
 
-  scroll_to(LIElement item) {
-    var l = this.listElement,
+  _scrollTo(LIElement item) {
+    var l = this._listElement,
         scrollTop = l.scrollTop(),
         scrollBottom = scrollTop + l.innerHeight(),
         item_height = item.borderEdge.height; //outerHeight(),
         var offsetTop = HtmlTools.prevSiblings(item).length * item_height,
         offsetBottom = offsetTop + item_height;
     if (offsetTop < scrollTop) {
-      this.ignore_mouseover();
+      this._ignoreMouseover();
       l.scrollTop(offsetTop);
     }
     else if (offsetBottom > scrollBottom) {
-      this.ignore_mouseover();
+      this._ignoreMouseover();
       l.scrollTop(scrollTop + offsetBottom - scrollBottom);
     }
   }
 
-  textchange() {
-    this.inputElement.dataset.remove('data');
-    this.inputElement.dispatchEvent(new Event("fb-textchange"));
-    var v = this.inputElement.value;
+  _textChange() {
+    this._inputElement.dataset.remove("data");
+    this.dispatchEvent(new CustomEvent("fb-textchange", detail:this.id)); // TODO this.id should be this - after fix of https://code.google.com/p/dart/issues/detail?id=12641
+    var v = this._inputElement.value;
+    this.value = v;
     if (v == "") {
-      this.status_start();
+      this._statusStart();
       return;
     }
     else {
-      this.status_loading();
+      this._statusLoading();
     }
-    this.request(v);
+    this._request(v);
   }
 
-  response(Data data, int cursor, [bool first]) {
+  _response(Data data, int cursor, [bool first]) {
     if (data == null) {
       return;
     }
     if (data.cost != null) {
-      this.trackEvent('name', "response", "cost", data.cost);
+      this._trackEvent("name", "response", "cost", data.cost);
     }
 
-    if (!this.check_response(data)) {
+    if (!this._checkResponse(data)) {
       return;
     }
     var result = [];
@@ -704,10 +736,10 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     if(data.result != null) {
       result = data.result;
     } else {
-      throw 'response: data doesn\'t contain result';
+      throw "response: data doesn\'t contain result";
     }
 
-    this.response_hook(data, cursor);
+    this._responseHook(data, cursor);
 
     var first = null;
     var o = this._options;
@@ -721,40 +753,40 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
           // For compatitibility reasons, store the mid as id
           eData.id = eData.mid;
       }
-      var li = this.create_item(eData, data);
-      this.listMouseOver = li.onMouseOver.listen((e) => this.mouseover_item(e));
-      li.dataset['data'] = eData.toJson();
-      this.listElement.append(li);
+      var li = this._createItem(eData, data);
+      this._listMouseOver = li.onMouseOver.listen((e) => this._mouseoverItem(e));
+      li.dataset["data"] = eData.toJson();
+      this._listElement.append(li);
       if (i == 0) {
         first = li;
         i++;
       }
     });
 
-    this.inputElement.dataset['original'] = this.inputElement.value;
+    this._inputElement.dataset["original"] = this._inputElement.value;
 
-    if (this.listElement.queryAll('.' + o.css.item).length == 0 && o.nomatch != null) {
+    if (this._listElement.queryAll("." + o.css.item).length == 0 && o.nomatch != null) {
       var nomatch = new LIElement();
-      nomatch.classes.add('fbs-nomatch');
-      if (o.nomatch['text'] != null) {
-        nomatch.text = o.nomatch['text'];
+      nomatch.classes.add("fbs-nomatch");
+      if (o.nomatch["text"] != null) {
+        nomatch.text = o.nomatch["text"];
       }
       else {
-        if (o.nomatch['title'] != null) {
-          var tmpEm = new Element.tag('em');
-          tmpEm.classes.add('fbs-nomatch-text');
-          tmpEm.text = o.nomatch['title'];
+        if (o.nomatch["title"] != null) {
+          var tmpEm = new Element.tag("em");
+          tmpEm.classes.add("fbs-nomatch-text");
+          tmpEm.text = o.nomatch["title"];
           nomatch.append(tmpEm);
         }
-        if (o.nomatch['heading'] != null) {
+        if (o.nomatch["heading"] != null) {
           var heading = new HeadingElement.h3();
-          heading.text = o.nomatch['heading'];
+          heading.text = o.nomatch["heading"];
           nomatch.append(heading);
         }
-        var tips = o.nomatch['tips'];
+        var tips = o.nomatch["tips"];
         if (tips != null && tips.length > 0) {
           var tipsElement = new UListElement();
-          tipsElement.classes.add('fbs-search-tips');
+          tipsElement.classes.add("fbs-search-tips");
 
           tips.forEach((i,tip) {
             var tipElement = new LIElement();
@@ -764,27 +796,27 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
           nomatch.append(tipsElement);
         }
       }
-      nomatchClick = nomatch.onClick.listen((e) => e.stopPropagation());
-      this.listElement.append(nomatch);
+      _nomatchClick = nomatch.onClick.listen((e) => e.stopPropagation());
+      this._listElement.append(nomatch);
     }
 
-    this.show_hook(data, cursor != -1, first);
-    this.position();
-    this.pane_show();
+    this._showHook(data, cursor != -1, first);
+    this._position();
+    this._paneShow();
   }
 
-  pane_show() {
+  _paneShow() {
     var show = false;
-    var p = this.paneElement;
+    var p = this._paneElement;
 
-    if (this.listElement.queryAll('* > li').length > 0) {
+    if (this._listElement.queryAll("* > li").length > 0) {
       show = true;
     }
 // TODO zu prüfen ob das so passt (not selector mit if geprüft)
       if (!show) {
-        p.children //(':not(.' + this.options.css.list + ')') // TODO selector
+        p.children //(":not(." + this.options.css.list + ")") // TODO selector
           .forEach((e) {
-            if (!e.classes.contains(this._options.css.list) && e.style.display != 'none') {
+            if (!e.classes.contains(this._options.css.list) && e.style.display != "none") {
               show = true;
               return false;
             }
@@ -794,45 +826,45 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       if (this._options.animate) { // TODO
 
         if (!HtmlTools.isVisible(p)) {
-        var v = p.style.visibility == '' ? 'visible' : p.style.visibility;
+        var v = p.style.visibility == "" ? "visible" : p.style.visibility;
         var d = p.style.display;
-        var o = p.style.overflow == '' ? 'visible' : p.style.overflow;
+        var o = p.style.overflow == "" ? "visible" : p.style.overflow;
 
-        p.style.visibility = 'hidden';
-        p.style.display = 'block';
-        p.style.overflow = 'hidden';
+        p.style.visibility = "hidden";
+        p.style.display = "block";
+        p.style.overflow = "hidden";
 
-        var height = p.borderEdge.height.toString() + 'px';
+        var height = p.borderEdge.height.toString() + "px";
 
         p.style.display = d;
         p.style.visibility = v;
 
-        p.style.height = '1px';
+        p.style.height = "1px";
         HtmlTools.showElement(p);
 
         var anim = new ElementAnimation(p)
-        ..properties = {'height': height }
+        ..properties = {"height": height }
         ..duration = 200
-        ..onComplete.first.then((e) { p.style.overflow = o; p.style.height = 'auto'; })
+        ..onComplete.first.then((e) { p.style.overflow = o; p.style.height = "auto"; })
         ..run();
         }
 
-        this.inputElement.dispatchEvent(new Event("fb-pane-show"));
+        this.dispatchEvent(new CustomEvent("fb-pane-show", detail: this.id)); // TODO detail
       }
       else {
         HtmlTools.showElement(p);
-        this.inputElement.dispatchEvent(new Event("fb-pane-show"));
+        this.dispatchEvent(new CustomEvent("fb-pane-show", detail:this.id)); // TODO detail
       }
     }
     else {
       HtmlTools.hideElement(p);
-      this.inputElement.dispatchEvent(new Event("fb-pane-hide"));
+      this.dispatchEvent(new CustomEvent("fb-pane-hide", detail:this.id)); // detail
     }
   }
 
 
-  mouseover_item(e) {
-    if (this.doScrollIgnoreMouseover != null) {
+  _mouseoverItem(e) {
+    if (this._doScrollIgnoreMouseover != null) {
       return;
     }
     var target = e.target;
@@ -841,9 +873,9 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     }
     var li = target;
     var css = this._options.css;
-    var l = this.listElement;
+    var l = this._listElement;
 
-      l.queryAll('.' + css.item) // TODO l
+      l.queryAll("." + css.item) // TODO l
         .forEach((e) {
           if (e != li.children[0]) {
             e.classes.remove(css.selected);
@@ -851,34 +883,34 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
         });
     if (!li.classes.contains(css.selected)) {
       li.classes.add(css.selected);
-      this.mouseover_item_hook(li);
+      this._mouseoverItemHook(li);
     }
   }
 
-  hoverover_list(e) {
+  _hoveroverList(e) {
   }
 
-  position() {
-    var p  = this.paneElement;
+  _position() {
+    var p  = this._paneElement;
     var o = this._options;
 
     if (o.parent != null) {
       return;
     }
 
-    if (this._position == null) {
-      var inp = this.inputElement;
+    if (this._currentPosition == null) {
+      var inp = this._inputElement;
       Point pos = inp.borderEdge.topLeft;
       int input_width = inp.borderEdge.width;
       int input_height = inp.borderEdge.height;
       pos = new Point(pos.x, pos.y + input_height);
 
       // temporary switch visibility to get dimensions
-      var v = p.style.visibility == '' ? 'visible' : p.style.visibility;
+      var v = p.style.visibility == "" ? "visible" : p.style.visibility;
       var d = p.style.display;
 
-      p.style.visibility = 'hidden';
-      p.style.display = 'block';
+      p.style.visibility = "hidden";
+      p.style.display = "block";
 
       var pane_width = p.offsetWidth;
       var pane_height = p.offsetHeight;
@@ -899,10 +931,10 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
       // is input left or right side of window?
       var left = true;
-      if ('left' == o.align ) {
+      if ("left" == o.align ) {
         left = true;
       }
-      else if ('right' == o.align ) {
+      else if ("right" == o.align ) {
         left = false;
       }
       else if (pos.x > (scroll_left + window_width/2)) {
@@ -922,27 +954,27 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
           pos = new Point(pos.x, top);
         }
       }
-      this._position = pos;
+      this._currentPosition = pos;
     }
-    p.style.top = this._position.y.toString() + 'px';
-    p.style.left = this._position.x.toString() + 'px';
+    p.style.top = this._currentPosition.y.toString() + "px";
+    p.style.left = this._currentPosition.x.toString() + "px";
   }
 
-  ignore_mouseover([e]) {
-    this.doScrollIgnoreMouseover = true;
+  _ignoreMouseover([e]) {
+    this._doScrollIgnoreMouseover = true;
     var future = new Future.delayed(const Duration(milliseconds: 1000));
-    this.scrollIgnoreMouseover = future.asStream().listen(this.ignore_mouseover_reset());
+    this._scrollIgnoreMouseover = future.asStream().listen(this._ignoreMouseoverReset());
   }
 
-  ignore_mouseover_reset() {
-    this.doScrollIgnoreMouseover = false;
+  _ignoreMouseoverReset() {
+    this._doScrollIgnoreMouseover = false;
   }
 
-  get_selected() {
+  _getSelected() {
     var selected = null,
     select_class = this._options.css.selected;
 
-    this.listElement.queryAll('li') // TODO this.list
+    this._listElement.queryAll("li") // TODO this.list
       .forEach((e) {
         if (e.classes.contains(select_class) &&
             HtmlTools.isVisible(e)) {
@@ -953,31 +985,32 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     return selected;
   }
 
-  onselect(selected) {
-    var data = new Data.fromJson(selected.dataset['data']);
+  _onSelect(selected) {
+    var data = new Data.fromJson(selected.dataset["data"]);
     if (data != null) {
-      this.inputElement
-        ..value = data.name //['name']
-        ..dataset['data'] = data.toJson()
-        ..dispatchEvent(new Event("fb-select"));
-        ;
+      this._inputElement
+        ..value = data.name //["name"]
+        ..dataset["data"] = data.toJson();
+      this.value = this._inputElement.value;
+      this.dispatchEvent(new CustomEvent("fb-select", detail: data));
+        
 
-      this.trackEvent('name', "fb-select", "index", HtmlTools.prevSiblings(selected).length);
+      this._trackEvent("name", "fb-select", "index", HtmlTools.prevSiblings(selected).length);
     }
   }
 
-  trackEvent(category, action, [label, value]) {
-      this.inputElement.dispatchEvent(new Event("fb-track-event")); // TODO
-//        category: category,
-//        action:action,
-//        label: label,
-//        value: value
-//      });
-    //console.log("trackEvent", category, action, label, value);
+  _trackEvent(category, action, [label, value]) {
+      this.dispatchEvent(new CustomEvent("fb-track-event", detail: {
+        "category": category,
+        "action":action,
+        "label": label,
+        "value": value
+      }));
+    //console.log("_trackEvent", category, action, label, value);
   }
 
 
-  strongify(str, substr) {
+  _strongify(str, substr) {
     // safely markup substr within str with <strong>
     var strong = new DivElement();
     var index = str.toLowerCase().indexOf(substr.toLowerCase());
@@ -985,7 +1018,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       var substr_len = substr.length;
       var pre = new SpanElement();
       pre.text = str.substring(0, index);
-      var em = new Element.tag('strong');
+      var em = new Element.tag("strong");
       em.text = str.substring(index, index + substr_len);
       var post = new SpanElement();
       post.text = str.substring(index + substr_len);
@@ -1000,7 +1033,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
   }
 
 
-  is_char(e) {
+  _isChar(e) {
     if (e.type == "keypress") {
       if ((e.metaKey || e.ctrlKey) && e.charCode == KeyCode.F7) { // TODO 118 warum F7??
         // ctrl+v
@@ -1015,11 +1048,11 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 //        if (not_char == null) {
 //          not_char = {};
 //          $.each($.suggest.keyCode, function(k,v) {
-//            not_char['' + v] = 1;
+//            not_char["" + v] = 1;
 //          });
 //          $.suggest.keyCode.not_char = not_char;
 //        }
-//        return !(('' + e.keyCode) in not_char);
+//        return !(("" + e.keyCode) in not_char);
     }
   }
 
@@ -1030,7 +1063,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
    * "bob dylan type:artist" -> ["bob dylan", ["type:artist"]]
    * "Dear... type:film name{full}:Dear..." -> ["Dear...", ["type:film", "name{full}:Dear..."]]
    */
-  List parse_input(str) {
+  List _parseInput(str) {
       // only pick out valid name:value pairs
       // a name:value is valid
       // 1. if there are no spaces before/after ":"
@@ -1042,28 +1075,28 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       var overrides = {};
       var m = regex.firstMatch(str);
       while (m != null) {
-          if (SEARCH_PARAMS.containsKey(m[1])) {
+          if (_SEARCH_PARAMS.containsKey(m[1])) {
               //overrides[m[1]] = $.isEmptyObject(m[2]) ? m[3] : m[2]; // TODO isEmptyObject implementieren http://api.jquery.com/jQuery.isEmptyObject/
           }
           else {
               filters.add(m[0]);
           }
-          qstr = qstr.replaceAll(m[0], '');
+          qstr = qstr.replaceAll(m[0], "");
           m = regex.firstMatch(str);
       }
-      qstr = qstr.replaceAll(r'/\s+/g', ' ').trim(); // TODO
+      qstr = qstr.replaceAll(r"/\s+/g", " ").trim(); // TODO
       return [qstr, filters, overrides];
   }
 
   /**
    * Convenient methods and regexs to determine valid mql ids.
    */
-  var mqlkey_fast = r'/^[_A-Za-z0-9][A-Za-z0-9_-]*$/';
-  var mqlkey_slow = r'/^(?:[A-Za-z0-9]|\$[A-F0-9]{4})(?:[A-Za-z0-9_-]|\$[A-F0-9]{4})*$/';
+  var _mqlkeyFast = r"/^[_A-Za-z0-9][A-Za-z0-9_-]*$/";
+  var _mqlkeySlow = r"/^(?:[A-Za-z0-9]|\$[A-F0-9]{4})(?:[A-Za-z0-9_-]|\$[A-F0-9]{4})*$/";
 
-  bool check_mql_key(val) {
-    RegExp regexFast = new RegExp(mqlkey_fast);
-    RegExp regexSlow = new RegExp(mqlkey_slow);
+  bool _checkMqlKey(val) {
+    RegExp regexFast = new RegExp(_mqlkeyFast);
+    RegExp regexSlow = new RegExp(_mqlkeySlow);
 
       if (regexFast.hasMatch(val)) {
           return true;
@@ -1074,18 +1107,18 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       return false;
   }
 
-  check_mql_id(String val) {
+  _checkMqlId(String val) {
       if (val.indexOf("/") == 0) {
           var keys = val.split("/");
-          // remove beginning '/'
-          keys.shift();
+          // remove beginning "/"
+          keys.removeAt(0); 
           if (keys.length == 1 && keys[0] == "") {
               // "/" is a valid id
               return true;
           }
           else {
               for (var i=0, l=keys.length; i<l; i++) {
-                  if (!check_mql_key(keys[i])) {
+                  if (!_checkMqlKey(keys[i])) {
                       return false;
                   }
               }
@@ -1112,95 +1145,96 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     if (o.flyoutServiceUrl == null) {
       o.flyoutServiceUrl = o.serviceUrl;
     }
-    this.flyout_url = o.flyoutServiceUrl;
+    this._flyoutUrl = o.flyoutServiceUrl;
     if (o.flyoutServicePath != null) {
-        this.flyout_url += o.flyoutServicePath;
+        this._flyoutUrl += o.flyoutServicePath;
     }
     // set api key for flyout service (search)
-    this.flyout_url = this.flyout_url.replaceFirst(r'${key}', o.key);
+    this._flyoutUrl = this._flyoutUrl.replaceFirst(r"${key}", o.key);
     if (o.flyoutImageServiceUrl == null) {
       o.flyoutImageServiceUrl = o.serviceUrl;
     }
-    this.flyout_image_url = o.flyoutImageServiceUrl;
+    this._flyoutImageUrl = o.flyoutImageServiceUrl;
     if (o.flyoutImageServicePath != null) {
-        this.flyout_image_url += o.flyoutImageServicePath;
+        this._flyoutImageUrl += o.flyoutImageServicePath;
     }
     // set api key for image api
-    this.flyout_image_url = this.flyout_image_url.replaceFirst(r'${key}', o.key);
+    this._flyoutImageUrl = this._flyoutImageUrl.replaceFirst(r"${key}", o.key);
 
-    if (this.cache == null) {
-      this.cache = {};
+    if (this._cache == null) {
+      this._cache = {};
     }
 
     if (o.flyout) {
-      this.flyoutpaneElement = new DivElement();
-      this.flyoutpaneElement
-        ..style.display = 'none'
-        ..classes.add('fbs-reset')
+      this._flyoutpaneElement = new DivElement();
+      this._flyoutpaneElement
+        ..style.display = "none"
+        ..classes.add("fbs-reset")
         ..classes.add(o.css.flyoutPane);
 
       if (o.flyoutParent != null) {
-        o.flyoutParent.append(this.flyoutpaneElement);
+        o.flyoutParent.append(this._flyoutpaneElement);
       }
       else {
-        this.flyoutpaneElement.style.position = 'absolute';
+        this._flyoutpaneElement.style.position = "absolute";
         if (o.zIndex != null) {
-          this.flyoutpaneElement.style.zIndex = o.zIndex.toString();
+          this._flyoutpaneElement.style.zIndex = o.zIndex.toString();
         }
-        document.body.append(this.flyoutpaneElement); // TODO oder besser an shadowRoot anhängen? (flyout funktioniert dann nicht mehr richtig)
+        document.body.append(this._flyoutpaneElement); // TODO oder besser an shadowRoot anhängen? (flyout funktioniert dann nicht mehr richtig)
       }
 
-      this.flyoutpaneMouseOver = flyoutpaneElement.onMouseOver.listen((e) => hoverover_list(e));
-      this.flyoutpaneMouseOut = flyoutpaneElement.onMouseOut.listen((e) => hoverout_list(e));
-      this.flyoutpaneMouseDown = flyoutpaneElement.onMouseDown.listen((e) {
+      this._flyoutpaneMouseOver = _flyoutpaneElement.onMouseOver.listen((e) => _hoveroverList(e));
+      this._flyoutpaneMouseOut = _flyoutpaneElement.onMouseOut.listen((e) => _hoveroutList(e));
+      this._flyoutpaneMouseDown = _flyoutpaneElement.onMouseDown.listen((e) {
         e.stopPropagation();
-        this.paneElement.click();
+        this._paneElement.click();
       });
 
-      if (flyoutCache == null) {
-        flyoutCache = new Map<String,Data>();
+      if (_flyoutCache == null) {
+        _flyoutCache = new Map<String,Data>();
       }
     }
   }
 
+  @override
   removed() {
-    this.paneElement.remove();
-    this.listElement.remove();
+    this._paneElement.remove();
+    this._listElement.remove();
 
-    this.subscriptions.forEach((e) {
+    this._subscriptions.forEach((e) {
       if(e != null) {
         e.cancel();
       }
     });
 
-    this.inputElement.dataset.clear() ;
+    this._inputElement.dataset.clear() ;
 
-    if (this.flyoutpaneElement != null) {
-      this.flyoutpaneElement.remove();
+    if (this._flyoutpaneElement != null) {
+      this._flyoutpaneElement.remove();
     }
-    this.inputElement.dataset.remove('requestCount');
-    this.inputElement.dataset.remove('flyoutRequestCount');
+    this._inputElement.dataset.remove("requestCount");
+    this._inputElement.dataset.remove("flyoutRequestCount");
 
     super.removed();
   }
 
-  shift_enter(e) {
+  _shiftEnter(e) {
     if (this._options.suggestNew) {
-      this.suggest_new();
-      this.hide_all();
+      this._suggestNew();
+      this._hideAll();
     }
   }
 
-  hide_all() {
-    HtmlTools.hideElement(this.paneElement);
-    if (this.flyoutpaneElement != null) {
-      HtmlTools.hideElement(this.flyoutpaneElement);
+  _hideAll() {
+    HtmlTools.hideElement(this._paneElement);
+    if (this._flyoutpaneElement != null) {
+      HtmlTools.hideElement(this._flyoutpaneElement);
     }
-    this.inputElement.dispatchEvent(new Event("fb-pane-hide"));
-    this.inputElement.dispatchEvent(new Event("fb-flyoutpane-hide"));
+    this.dispatchEvent(new CustomEvent("fb-pane-hide", detail: this.id)); // TODO detail
+    this.dispatchEvent(new CustomEvent("fb-flyoutpane-hide", detail: this.id)); // TODO detail
   }
 
-  request(val, [int cursor]) {
+  _request(val, [int cursor]) {
     var o = this._options;
     var query = val;
     var filter = o.acParam.filter != null ? o.acParam.filter : [];
@@ -1213,19 +1247,19 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
     if (o.advanced) {
         // parse out additional filters in input value
-        var structured = parse_input(query);
+        var structured = _parseInput(query);
         query = structured[0];
         if (structured[1].length > 0) {
             // all advance filters are ANDs
             filter.add("(all " + structured[1].join(" ") + ")");
         }
         extend_ac_param = structured[2];
-        if (check_mql_id(query)) {
+        if (_checkMqlId(query)) {
             // handle anything that looks like a valid mql id:
             // filter=(all%20alias{start}:/people/pers)&prefixed=true
             filter.add("(any alias{start}:\"" + query + "\" mid:\"" +
                         query + "\")");
-            extend_ac_param['prefixed'] = true;
+            extend_ac_param["prefixed"] = true;
             query = "";
         }
     }
@@ -1238,90 +1272,90 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     }
     // $.extend(data, o.ac_param, extend_ac_param); // TODO
     if (filter.length > 0) {
-        data.filter = filter; //['filter'] = filter;
+        data.filter = filter; //["filter"] = filter;
     }
 
-    var url = o.serviceUrl + o.servicePath + '?' + data.toUrlEncoded();
-    var cached = cache[url];
+    var url = o.serviceUrl + o.servicePath + "?" + data.toUrlEncoded();
+    var cached = this._cache[url];
     if (cached != null) {
-      this.response(cached, cursor != null ? cursor : -1, true);
+      this._response(cached, cursor != null ? cursor : -1, true);
       return;
     }
 
-    var callsStr = this.inputElement.dataset['request.count.suggest'];
+    var callsStr = this._inputElement.dataset["request.count.suggest"];
     int calls = callsStr != null ? int.parse(callsStr, radix: 10) : 0;
 
 
     var request = new HttpRequest();
     request
-    ..open('GET', url)
+    ..open("GET", url)
     ..onLoadStart.first.then((e) {
       if (calls == null) {
         calls = 0;
       }
       if (calls == 0) {
-        this.trackEvent('name', 'start_session');
+        this._trackEvent("name", "start_session");
       }
       calls += 1;
-      this.trackEvent('name', 'request', 'count', calls);
-      this.inputElement.dataset['request.count.suggest'] = calls.toString();
+      this._trackEvent("name", "request", "count", calls);
+      this._inputElement.dataset["request.count.suggest"] = calls.toString();
     })
     ..onLoadEnd.listen((HttpRequestProgressEvent e) {
       if (request.status == 200) {
         data = new Data.fromJson(request.responseText);
-        cache[url] = data;
+        this._cache[url] = data;
         data.prefix = val;  // keep track of prefix to match up response with input value
-        this.response(data, cursor != null ? cursor : -1);
+        this._response(data, cursor != null ? cursor : -1);
       }
     })
     ..onReadyStateChange.listen((HttpRequestProgressEvent e) {
       if(request.readyState == HttpRequest.DONE) {
-          this.trackEvent('name', 'request', 'tid');
-          //request.getResponseHeader('X-Metaweb-TID')); // has to be enabled - how?
+          this._trackEvent("name", "request", "tid");
+          //request.getResponseHeader("X-Metaweb-TID")); // has to be enabled - how?
       }
     })
     ..onError.listen(
       (var e) {
-        this.status_error();
-        this.trackEvent('name', 'request', 'error', {
-          'url': url,
-          'response': request.responseText != null ? request.responseText : ''
+        this._statusError();
+        this._trackEvent("name", "request", "error", {
+          "url": url,
+          "response": request.responseText != null ? request.responseText : ""
         });
-        this.inputElement.dispatchEvent(new Event('fb-error')); //, xhr);
+        this.dispatchEvent(new CustomEvent("fb-error", detail: [val, cursor]));
     });
 
     var future = new Future.delayed(new Duration(milliseconds: o.xhrDelay), () => request.send());
   }
 
 
-  LIElement create_item(Data data, Data response_data) {
+  LIElement _createItem(Data data, Data response_data) {
     var css = this._options.css;
     var li =  new LIElement();
     li.classes.add(css.item);
     var label = new LabelElement();
-    label.append(strongify(data.name != null ? data.name : data.id, response_data.prefix));
+    label.append(_strongify(data.name != null ? data.name : data.id, response_data.prefix));
     var name = new DivElement();
     name.classes.add(css.itemName);
     name.append(label);
     var nt = data.notable;
     if (data.under != null) {
-      var small = new Element.tag('small');
-      small.text = ' (' + data.under + ')';
-      label.query(':first').append(small);
+      var small = new Element.tag("small");
+      small.text = " (" + data.under + ")";
+      label.query(":first").append(small);
     }
-    if ((nt != null && is_system_type(nt['id'])) ||
+    if ((nt != null && is_system_type(nt["id"])) ||
         (this._options.scoring != null  &&
-         this._options.scoring.toUpperCase() == 'SCHEMA')) {
-      var small = new Element.tag('small');
-      small.text = ' (' + data.id + ')';
-      label.query(':first').append(small);
+         this._options.scoring.toUpperCase() == "SCHEMA")) {
+      var small = new Element.tag("small");
+      small.text = " (" + data.id + ")";
+      label.query(":first").append(small);
     }
 
     li.append(name);
     var type = new DivElement();
     type.classes.add(css.itemType);
-    if (nt != null && nt['name'] != null) {
-      type.text = nt['name'];
+    if (nt != null && nt["name"] != null) {
+      type.text = nt["name"];
     }
     else if (this._options.showId && data.id != null) {
         // display human readable id if no notable type
@@ -1333,74 +1367,75 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       name.append(type);
     }
 
-    //console.log("create_item", li);
+    //console.log("_createItem", li);
     return li;
   }
 
 
-  mouseover_item_hook(li) {
-    var data = new Data.fromJson(li.dataset['data']);
+  _mouseoverItemHook(li) {
+    var data = new Data.fromJson(li.dataset["data"]);
 
     if (this._options.flyout) {
       if (data != null) {
-        this.flyout_request(data);
+        this._flyoutRequest(data);
       }
       else {
-        //this.flyoutpaneElement.hide();
+        //this._flyoutpaneElement.hide();
       }
     }
   }
 
-  check_response(Data response_data) {
-    return response_data.prefix == this.inputElement.value;
+  _checkResponse(Data response_data) {
+    return response_data.prefix == this._inputElement.value;
   }
 
-  response_hook(Data response_data, int cursor) {
-    if (this.flyoutpaneElement != null) {
-      HtmlTools.hideElement(this.flyoutpaneElement);
+  _responseHook(Data response_data, int cursor) {
+    if (this._flyoutpaneElement != null) {
+      HtmlTools.hideElement(this._flyoutpaneElement);
     }
     if (cursor != null && cursor > 0) {
-      this.paneElement.queryAll(".fbs-more").forEach((e) => e.remove());
+      this._paneElement.queryAll(".fbs-more").forEach((e) => e.remove());
     }
     else {
       //this.pane.hide();
-      this.listElement.children.clear();
+      this._listElement.children.clear();
     }
   }
 
-  show_hook(Data response_data, cursor, LIElement first) {
-    this.status_select();
+  _showHook(Data response_data, cursor, LIElement first) {
+    this._statusSelect();
 
     var o = this._options;
-    var p = this.paneElement;
-    var l = this.listElement;
+    var p = this._paneElement;
+    var l = this._listElement;
     var result = response_data.result;
-    var more = p.query('.fbs-more'); // TODO p
-    var suggestnew = p.query('.fbs-suggestnew'); // TODO p
-    var status = p.query('.fbs-status'); // TODO p
+    var more = p.query(".fbs-more"); // TODO p
+    var suggestnew = p.query(".fbs-suggestnew"); // TODO p
+    var status = p.query(".fbs-status"); // TODO p
 
     // spell/correction
     var correction = response_data.correction;
     if (correction != null && correction.length > 0) {
       var spell_link = new AnchorElement();
       spell_link
-        ..href = '#'
-        ..classes.add('fbs-spell-link')
+        ..href = "#"
+        ..classes.add("fbs-spell-link")
         ..append(correction[0]);
 
-      spellLinkClick = spell_link.onClick.listen((e) {
+      _spellLinkClick = spell_link.onClick.listen((e) {
           e.preventDefault();
           e.stopPropagation();
-          this.inputElement.value = correction[0];
-          this.inputElement.dispatchEvent(new Event("textchange"));
+          this._inputElement.value = correction[0];
+          this.value = this._inputElement.value;
+          this.dispatchEvent(new Event("textchange"));
         });
       var searchInsteadElement = new SpanElement();
-      searchInsteadElement.text = 'Search instead for ';
-      this.statusElement
+      searchInsteadElement.text = "Search instead for ";
+      this._statusElement
         ..children.clear()
         .append(searchInsteadElement)
         .append(spell_link);
-      HtmlTools.showElement(this.statusElement);
+      HtmlTools.showElement(this._statusElement);
     }
 
     // more
@@ -1408,29 +1443,29 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       if (more == null) {
         var more_link = new AnchorElement();
         more_link
-          ..classes.add('fbs-more-link')
-          ..href = '#'
-          ..title = '(Ctrl+m)'
-          ..text = 'view more';
+          ..classes.add("fbs-more-link")
+          ..href = "#"
+          ..title = "(Ctrl+m)"
+          ..text = "view more";
         more = new DivElement();
         more
-          ..classes.add('fbs-more')
+          ..classes.add("fbs-more")
           ..append(more_link);
         if (response_data.cursor <= 200) { // TODO make querylimit an option with default to 200
-          moreLinkClick = more_link.onClick.listen((e) {
+          _moreLinkClick = more_link.onClick.listen((e) {
             e.preventDefault();
             e.stopPropagation();
-            var m = this.paneElement.query(".fbs-more"); // TODO $(this).parent('.fbs-more')
-            this.more(int.parse(m.dataset['cursor'], radix: 10));
+            var m = this._paneElement.query(".fbs-more"); // TODO $(this).parent(".fbs-more")
+            this._more(int.parse(m.dataset["cursor"], radix: 10));
           });
         } else {
-          more_link.style.pointerEvents = 'none';
-          more_link.style.cursor = 'default';
-          more_link.text = 'query limit reached';
+          more_link.style.pointerEvents = "none";
+          more_link.style.cursor = "default";
+          more_link.text = "query limit reached";
         }
         l.parent.insertBefore(more, l.nextElementSibling);
       }
-      more.dataset['cursor'] = response_data.cursor.toString();
+      more.dataset["cursor"] = response_data.cursor.toString();
       HtmlTools.showElement(more);
     }
     else {
@@ -1444,26 +1479,26 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       if (suggestnew == null) {
         // create suggestnew option
         var button = new ButtonElement();
-        button.classes.add('fbs-suggestnew-button');
+        button.classes.add("fbs-suggestnew-button");
         button.text(o.suggestNew);
         suggestnew = new DivElement();
-        suggestnew.classes.add('fbs-suggestnew');
+        suggestnew.classes.add("fbs-suggestnew");
         var tmpDiv = new DivElement();
         tmpDiv
-          ..classes.add('fbs-suggestnew-description')
-          ..text = 'Your item not in the list?';
+          ..classes.add("fbs-suggestnew-description")
+          ..text = "Your item not in the list?";
         var tmpSpan = new SpanElement();
         tmpSpan
-          ..classes.add('fbs-suggestnew-shortcut')
-          ..text = '(Shift+Enter)';
+          ..classes.add("fbs-suggestnew-shortcut")
+          ..text = "(Shift+Enter)";
         suggestnew
           ..append(tmpDiv)
           ..append(button)
           ..append(tmpSpan);
 
-        suggestNewClick = suggestnew.onClick.listen((e) {
+        _suggestNewClick = suggestnew.onClick.listen((e) {
             e.stopPropagation();
-            this.suggest_new(e);
+            this._suggestNew(e);
           });
         p.append(suggestnew);
       }
@@ -1479,137 +1514,141 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     if ((first != null) && cursor) {
       var top = HtmlTools.prevSiblings(first).length * first.getBoundingClientRect().height;
 
-      animate(first.parent, properties: {'scrollTop': top})
-        .onComplete.first.then((e) => first.dispatchEvent(new MouseEvent('mouseover')));
+      animate(first.parent, properties: {"scrollTop": top})
+        .onComplete.first.then((e) => first.dispatchEvent(new MouseEvent("mouseover")));
     }
   }
 
-  suggest_new([e]) {
-    var v = this.inputElement.value;
+  _suggestNew([e]) {
+    var v = this._inputElement.value;
     if (v == "") {
       return;
     }
-    //console.log("suggest_new", v);
-    this.inputElement
-      ..dataset['data'] = v
-      ..dispatchEvent(new Event("fb-select-new"));
-    this.trackEvent('name', "fb-select-new", "index", "new");
-    this.hide_all();
+    //console.log("_suggestNew", v);
+    this._inputElement
+      ..dataset["data"] = v;
+    this.dispatchEvent(new CustomEvent("fb-select-new", detail: v));
+    this._trackEvent("name", "fb-select-new", "index", "new");
+    this._hideAll();
   }
 
-  more(int cursor) {
+  _more(int cursor) {
     if (cursor != null && cursor > 0) {
-      var orig = this.inputElement.dataset['original'];
+      var orig = this._inputElement.dataset["original"];
       if (orig != null) {
-        this.inputElement.value = orig;
+        this._inputElement.value = orig;
+        this.value = this._inputElement.value;
       }
-      this.request(this.inputElement.value, cursor);
-      this.trackEvent('name', 'more', 'cursor', cursor);
+      this._request(this._inputElement.value, cursor);
+      this._trackEvent("name", "more", "cursor", cursor);
     }
     return false;
   }
 
-  flyout_request(Data data) {
+  _flyoutRequest(Data data) {
     var o = this._options;
-    var sug_data = new Data.fromJson(this.flyoutpaneElement.dataset['data']);
-    if (sug_data != null && data.id == sug_data['id']) {
-      if (!HtmlTools.isVisible(this.flyoutpaneElement)) {
-        var s = this.get_selected();
-        this.flyout_position(s);
-        HtmlTools.showElement(this.flyoutpaneElement);
-        this.inputElement.dispatchEvent(new Event('fb-flyoutpane-show'));
+    var sug_data = new Data.fromJson(this._flyoutpaneElement.dataset["data"]);
+    if (sug_data != null && data.id == sug_data["id"]) {
+      if (!HtmlTools.isVisible(this._flyoutpaneElement)) {
+        var s = this._getSelected();
+        this._flyoutPosition(s);
+        HtmlTools.showElement(this._flyoutpaneElement);
+        this.dispatchEvent(new CustomEvent("fb-flyoutpane-show", detail: this.id)); // TODO detail
       }
       return;
     }
 
     // check $.suggest.flyout.cache
-    var cached = this.flyoutCache[data.id];
-    if (cached != null && cached['id'] != null && cached['html'] != null) {
+    var cached = this._flyoutCache[data.id];
+    if (cached != null && cached["id"] != null && cached["html"] != null) {
       // CLI-10009: use cached item only if id and html present
-      this.flyout_response(cached);
+      this._flyoutResponse(cached);
       return;
     }
 
     //this.flyoutpane.hide();
     var flyout_id = data.id;
-    var url = this.flyout_url.replaceFirst(r'${id}', data.id);
+    var url = this._flyoutUrl.replaceFirst(r"${id}", data.id);
 
 
     var request = new HttpRequest();
     request
-    ..open('GET', url)
+    ..open("GET", url)
     ..onLoadStart.first.then((e) {
-      var calls = this.inputElement.dataset['flyoutRequestCount'] != null ?
-          int.parse(this.inputElement.dataset['flyoutRequestCount'], radix: 10) : 0;
+      var calls = this._inputElement.dataset["flyoutRequestCount"] != null ?
+          int.parse(this._inputElement.dataset["flyoutRequestCount"], radix: 10) : 0;
       calls += 1;
-      this.trackEvent('name', 'flyout.request', 'count', calls);
-      this.inputElement.dataset['flyoutRequestCount'] = calls.toString();
+      this._trackEvent("name", "flyout.request", "count", calls);
+      this._inputElement.dataset["flyoutRequestCount"] = calls.toString();
     })
     ..onLoadEnd.listen((e) {
       if (request.status == 200) {
         data = new Data.fromJson(request.responseText);
-        data['req:id'] = flyout_id;
+        data["req:id"] = flyout_id;
         if (data.result != null && data.result.length > 0) {
           data.html =
-              create_flyout(data.result[0],
-                  this.flyout_image_url);
+              _createFlyout(data.result[0],
+                  this._flyoutImageUrl);
         }
-        flyoutCache[flyout_id] = data;
-        this.flyout_response(data);
+        _flyoutCache[flyout_id] = data;
+        this._flyoutResponse(data);
       }
     })
     ..onReadyStateChange.listen((e) {
       if(request.readyState == HttpRequest.DONE) {
-        this.trackEvent('name', 'flyout', 'tid'); //,
-//        request.getResponseHeader('X-Metaweb-TID'));
+        this._trackEvent("name", "flyout", "tid"); //,
+//        request.getResponseHeader("X-Metaweb-TID"));
       }
     })
     ..onError.listen(
       (e) {
-        this.trackEvent('name', 'flyout', 'error', {
-          'url': url,
-          'response': request.responseText != null ? request.responseText : ''
+        this._trackEvent("name", "flyout", "error", {
+          "url": url,
+          "response": request.responseText != null ? request.responseText : ""
         });
     });
 
     new Future.delayed(new Duration(milliseconds: o.xhrDelay), () => request.send());
 
-    this.inputElement.dispatchEvent(new Event("fb-request-flyout"));
+    this.dispatchEvent(new CustomEvent("fb-request-flyout", detail: { // TODO detail: request)); 
+      "url": url,
+      "cache": true
+    }));
   }
 
-  flyout_response(Data data) {
+  _flyoutResponse(Data data) {
     var o = this._options;
-    var p = this.paneElement;
-    var s = this.get_selected();
+    var p = this._paneElement;
+    var s = this._getSelected();
     if (HtmlTools.isVisible(p) && s != null) {
-      var sug_data = new Data.fromJson(s.dataset['data']);
-      if ((sug_data != null) && (data["req:id"] == sug_data['id']) && (data.html != null)) {
-        this.flyoutpaneElement.children.clear();
-        this.flyoutpaneElement.append(data.html);
-        this.flyout_position(s);
-        HtmlTools.showElement(this.flyoutpaneElement);
-        this.flyoutpaneElement.dataset['data'] = sug_data.toJson();
-        this.inputElement.dispatchEvent(new Event("fb-flyoutpane-show"));
+      var sug_data = new Data.fromJson(s.dataset["data"]);
+      if ((sug_data != null) && (data["req:id"] == sug_data["id"]) && (data.html != null)) {
+        this._flyoutpaneElement.children.clear();
+        this._flyoutpaneElement.append(data.html);
+        this._flyoutPosition(s);
+        HtmlTools.showElement(this._flyoutpaneElement);
+        this._flyoutpaneElement.dataset["data"] = sug_data.toJson();
+        this.dispatchEvent(new CustomEvent("fb-flyoutpane-show", detail: this.id)); // TODO detail
       }
     }
   }
 
-  flyout_position(LIElement item) {
+  _flyoutPosition(LIElement item) {
     if (this._options.flyoutParent != null) {
       return;
     }
 
-    var p = this.paneElement;
-    var fp = this.flyoutpaneElement;
+    var p = this._paneElement;
+    var fp = this._flyoutpaneElement;
     var css = this._options.css;
     Point pos;
 
     // temporary switch visibility to get dimensions
-    var v = fp.style.visibility == '' ? 'visible' : p.style.visibility;
+    var v = fp.style.visibility == "" ? "visible" : p.style.visibility;
     var d = fp.style.display;
 
-    fp.style.visibility = 'hidden';
-    fp.style.display = 'block';
+    fp.style.visibility = "hidden";
+    fp.style.display = "block";
 
     Point old_pos = fp.offset.topLeft;
     var flyout_size = new Point(fp.offsetWidth, fp.offsetHeight);
@@ -1623,7 +1662,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     if (this._options.flyout == "bottom") {
       // flyout position on top/bottom
       pos = pane_pos;
-      var input_pos = this.inputElement.offset.topLeft;
+      var input_pos = this._inputElement.offset.topLeft;
       if (pane_pos.y < input_pos.y) {
         pos = new Point(pos.x, pos.y - flyout_size.y);
       }
@@ -1658,14 +1697,14 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     if (!(pos.y == old_pos.y &&
           pos.x == old_pos.x)) {
       fp.style
-        ..top = pos.y.toString() + 'px'
-        ..left = pos.x.toString() + 'px';
+        ..top = pos.y.toString() + "px"
+        ..left = pos.x.toString() + "px";
     }
   }
 
-  hoverout_list([e]) {
-    if (this.flyoutpaneElement != null && this.get_selected() == null) {
-      HtmlTools.hideElement(this.flyoutpaneElement);
+  _hoveroutList([e]) {
+    if (this._flyoutpaneElement != null && this._getSelected() == null) {
+      HtmlTools.hideElement(this._flyoutpaneElement);
     }
   }
 
@@ -1674,8 +1713,8 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
  * Utility method to get values of an object specified by one or more
  * (nested) keys. For example:
  * <code>
- *   get_value(my_dict, ['foo', 'bar'])
- *   // Would resolve to my_dict['foo']['bar'];
+ *   _getValue(my_dict, ["foo", "bar"])
+ *   // Would resolve to my_dict["foo"]["bar"];
  * </code>
  * The method will return null, if any of the path specified refers to
  * a null or undefined value in the object.
@@ -1685,7 +1724,7 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
  * to an array of their names and ALWAYS return an array of strings
  * of length >= 0.
  */
-  get_value(obj, path, [resolve_search_values]) {
+  _getValue(obj, path, [resolve_search_values]) {
     if (obj == null || path == null || path.length == 0) {
       return null;
     }
@@ -1711,23 +1750,23 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       var values = [];
       v.forEach((value) {
         if (value is Map) {
-          if (value['name'] != null) {
-            value = value['name'];
+          if (value["name"] != null) {
+            value = value["name"];
           }
-          else if (value['id'] != null || value['mid'] != null) {
-            value = value['id'] != null ? value['id'] : value['mid'];
+          else if (value["id"] != null || value["mid"] != null) {
+            value = value["id"] != null ? value["id"] : value["mid"];
           }
-          else if (value['value'] != null) {
+          else if (value["value"] != null) {
             // For cvts, value may contain other useful info (like date, etc.)
             var cvts = [];
             value.forEach((k, v) {
-              if (k != 'value') {
+              if (k != "value") {
                 cvts.add(v);
               }
             });
-            value = value['value'];
+            value = value["value"];
             if (cvts.length > 0) {
-              value += ' (' + cvts.join(', ') + ')';
+              value += " (" + cvts.join(", ") + ")";
             }
           }
         }
@@ -1744,9 +1783,9 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     return v == null ? null : v;
   }
 
-  is_commons_id(String id) {
-    RegExp base = new RegExp(r'/^\/base\//');
-    RegExp user = new RegExp(r'/^\/user\//');
+  _isCommonsId(String id) {
+    RegExp base = new RegExp(r"/^\/base\//");
+    RegExp user = new RegExp(r"/^\/user\//");
     if (base.hasMatch(id) || user.hasMatch(id)) {
       return false;
     }
@@ -1760,40 +1799,40 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
  *
  * @param data:Object - The search result with
  *     output=(notable:/client/summary description type).
- * @param flyout_image_url:String - The url template for the image url.
+ * @param _flyoutImageUrl:String - The url template for the image url.
  *   The substring, "${id}", will be replaced by data.id. It is assumed all
  *   parameters to the flyout image service (api key, dimensions, etc.) is
  *   already encoded into the url template.
  */
-  DivElement create_flyout(var data, flyout_image_url) {
+  DivElement _createFlyout(var data, _flyoutImageUrl) {
 
-    var name = data['name'];
+    var name = data["name"];
     var id = null;
     var image = null;
     var notable_props = [];
     var notable_types = [];
     var notable_seen = {}; // Notable types already added
-    var notable = this.get_value(data, 'notable');
-    if (notable != null && notable['name'] != null) {
-      notable_types.add(notable['name']);
-      notable_seen[notable['name']] = true;
+    var notable = this._getValue(data, "notable");
+    if (notable != null && notable["name"] != null) {
+      notable_types.add(notable["name"]);
+      notable_seen[notable["name"]] = true;
     }
-    if (notable != null && is_system_type(notable['id'])) {
+    if (notable != null && is_system_type(notable["id"])) {
       id = data.id;
     }
     else {
-      id = data['mid'];
-      image = flyout_image_url.replaceFirst(r'${id}', id);
+      id = data["mid"];
+      image = _flyoutImageUrl.replaceFirst(r"${id}", id);
     }
-    var description_src = 'freebase';
-    var description = this.get_value(
-        data, ['output', 'description', 'wikipedia'], true);
+    var description_src = "freebase";
+    var description = this._getValue(
+        data, ["output", "description", "wikipedia"], true);
     if (description != null && description.length > 0) {
-      description_src = 'wikipedia';
+      description_src = "wikipedia";
     }
     else {
-      description = this.get_value(
-          data, ['output', 'description', 'freebase'], true);
+      description = this._getValue(
+          data, ["output", "description", "freebase"], true);
     }
     if (description != null && description.length > 0) {
       description = description[0];
@@ -1801,22 +1840,22 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     else {
       description = null;
     }
-    var summary = get_value(data, ['output', 'notable:/client/summary']);
+    var summary = _getValue(data, ["output", "notable:/client/summary"]);
     if (summary != null) {
-      var notable_paths = get_value(summary, '/common/topic/notable_paths');
+      var notable_paths = _getValue(summary, "/common/topic/notable_paths");
       if (notable_paths != null && notable_paths.length > 0) {
         notable_paths.forEach((String path) {
-          var values = get_value(summary, path, true);
+          var values = _getValue(summary, path, true);
           if (values != null && values.length > 0) {
-            var prop_text = path.split('/');
+            var prop_text = path.split("/");
             prop_text.length -= 1;
-            notable_props.add([prop_text, values.join(', ')]);
+            notable_props.add([prop_text, values.join(", ")]);
           }
         });
       }
     }
-    var types = get_value(
-        data, ['output', 'type', '/type/object/type'], true);
+    var types = _getValue(
+        data, ["output", "type", "/type/object/type"], true);
     if (types != null && types.length > 0) {
       types.forEach((t) {
         if (notable_seen[t] == null || notable_seen[t] == false) {
@@ -1826,29 +1865,29 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
       });
     }
     var content = new DivElement();
-    content.classes.add('fbs-flyout-content');
+    content.classes.add("fbs-flyout-content");
     if (name != null) {
       var h1 = new HeadingElement.h1();
       h1
-        ..id='fbs-flyout-title'
+        ..id="fbs-flyout-title"
         ..text = name;
       content.append(h1);
     }
     var h3 = new HeadingElement.h3();
     h3
-      ..classes.addAll(['fbs-topic-properties', 'fbs-flyout-id'])
+      ..classes.addAll(["fbs-topic-properties", "fbs-flyout-id"])
       ..text = id;
     content.append(h3);
 
     notable_props.forEach((prop) {
 
       var h3 = new HeadingElement.h3();
-      var strong = new Element.tag('strong');
-      strong.text = prop[0][0] + ': ';
+      var strong = new Element.tag("strong");
+      strong.text = prop[0][0] + ": ";
 
       var textNode =
       h3
-        ..classes.add('fbs-topic-properties')
+        ..classes.add("fbs-topic-properties")
         ..append(strong)
         ..append(new Text(prop[1]));
       content.append(h3);
@@ -1856,12 +1895,12 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
     if (description != null) {
       var p = new ParagraphElement();
-      p.classes.add('fbs-topic-article');
+      p.classes.add("fbs-topic-article");
 
-      var em = new Element.tag('em');
+      var em = new Element.tag("em");
       em
-        ..classes.add('fbs-citation')
-        ..text = '[' + description_src + '] ';
+        ..classes.add("fbs-citation")
+        ..text = "[" + description_src + "] ";
       var text = new Text(description);
       p
         ..append(em)
@@ -1871,12 +1910,12 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     }
 
     if (image != null) {
-      content.children.forEach((e) => e.classes.add('fbs-flyout-image-true'));
+      content.children.forEach((e) => e.classes.add("fbs-flyout-image-true"));
 
       var img = new ImageElement();
       img
-        ..id = 'fbs-topic-image'
-        ..classes.add('fbs-flyout-image-true')
+        ..id = "fbs-topic-image"
+        ..classes.add("fbs-flyout-image-true")
         ..src = image;
 
       if(content.children.length > 0) {
@@ -1887,11 +1926,11 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     }
     var flyout_types = new SpanElement();
     flyout_types
-      ..classes.add('fbs-flyout-types')
-      ..text = notable_types.getRange(0, notable_types.length < 10 ? notable_types.length : 10).join(', ');
+      ..classes.add("fbs-flyout-types")
+      ..text = notable_types.getRange(0, notable_types.length < 10 ? notable_types.length : 10).join(", ");
     var footer = new DivElement();
     footer
-      ..classes.add('fbs-attribution')
+      ..classes.add("fbs-attribution")
       ..append(flyout_types);
 
     var ret = new DivElement();
@@ -1902,5 +1941,508 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
   }
 
 
-  var f = new InputElement(type: 'text');
+  //var f = new InputElement(type: "text");
 }
+
+/**
+the following code is supposed to be in separate files, but due to limitations in build/deploy separate code files are not supported yet
+*/
+
+//class AcParam {
+//  String key;
+//  List<String> filter;
+//  String spell;
+//  bool exact;
+//  String lang;
+//  String scoring;
+//  bool prefixed;
+//  bool stemmed;
+//  String format;
+//  String mqlOutput;
+//  String output;
+//
+//  AcParam() {
+//  }
+//
+//  AcParam.fromOption(Option option) {
+//    this.key = option.key;
+//    this.filter = option.filter;
+//    this.spell = option.spell;
+//    this.exact = option.exact;
+//    this.lang = option.lang;
+//    this.scoring = option.scoring;
+//    this.prefixed = option.prefixed;
+//    this.stemmed = option.stemmed;
+//    this.format = option.format;
+//    this.mqlOutput = option.mqlOutput;
+//    this.output = option.output;
+//  }
+//}
+//
+//class CssOption {
+//  String pane;
+//  String list;
+//  String item;
+//  String itemName;
+//  String selected;
+//  String status;
+//  String flyoutPane;
+//  String itemType;
+//
+//  CssOption.defaults() {
+//    setDefaults();
+//  }
+//
+//  void setDefaults() {
+//    this.pane = "fbs-pane";
+//    this.list = "fbs-list";
+//    this.item = "fbs-item";
+//    this.itemName = "fbs-item-name";
+//    this.selected = "fbs-selected";
+//    this.status = "fbs-status";
+//
+//    this.itemType = "fbs-item-type";
+//    this.flyoutPane = "fbs-flyout-pane";
+//  }
+//
+//  CssOption.withData(Map<String,dynamic> data, {useDefaults: true}) {
+//
+//    if (useDefaults) {
+//      this.setDefaults();
+//    }
+//
+//    if (data != null) {
+//      if (data.containsKey("pane")) this.pane = data["pane"];
+//      if (data.containsKey("list")) this.list = data["list"];
+//      if (data.containsKey("item")) this.item = data["item"];
+//      if (data.containsKey("item_name")) this.itemName = data["item_name"];
+//      if (data.containsKey("selected")) this.selected = data["selected"];
+//      if (data.containsKey("status")) this.status = data["status"];
+//      if (data.containsKey("item_type")) this.itemType = data["item_type"];
+//      if (data.containsKey("flyoutpane")) this.flyoutPane = data["flyoutpane"];
+//    }
+//  }
+//
+//  CssOption({this.pane, this.list, this.item, this.itemName, this.selected, this.status, this.flyoutPane, this.itemType})
+//  {}
+//
+//  addPrefixes(String prefix) {
+//    pane = prefix + pane;
+//    list = prefix + list;
+//    item = prefix + item;
+//    itemName = prefix + itemName;
+//    selected = prefix + selected;
+//    status = prefix + status;
+//    flyoutPane = prefix + flyoutPane;
+//  }
+//}
+//
+//class Data implements Map<String,dynamic>{
+//  var _map = new Map<String,dynamic>();
+//
+//  int get cost => _map.containsKey("cost") ? _map["cost"] : null;
+//  set cost(int value) => _map["cost"] = value;
+//
+//  String get correction => _map.containsKey("correction") ? _map["correction"] : null;
+//  set correction(String value) => _map["correction"] = value;
+//
+//  int get cursor => _map.containsKey("cursor") ? _map["cursor"] : null;
+//  set cursor(int value) => _map["cursor"] = value;
+//
+//  String get id => _map["id"]; //_map.containsKey("id") ? _map["id"] : null;
+//  set id(String value) => _map["id"] = value;
+//
+//  List get filter => _map.containsKey("filter") ? _map["filter"] : null;
+//  set filter(List value) => _map["filter"] = value;
+//
+//  String get mid => _map.containsKey("mid") ? _map["mid"] : null;
+//  set mid(String value) => _map["mid"] = value;
+//
+//  String get name => _map.containsKey("name") ? _map["name"] : null;
+//  set name(String value) => _map["name"] = value;
+//
+//  DivElement get html => _map.containsKey("html") ? _map["html"] : null;
+//  set html(DivElement value) => _map["html"] = value;
+//
+//  Map get notable => _map.containsKey("notable") ? _map["notable"] : null;
+//  set notable(Map value) => _map["notable"] = value;
+//
+//  String get prefix => _map.containsKey("prefix") ? _map["prefix"] : null;
+//  set prefix(String value) => _map["prefix"] = value;
+//
+//  List get result => _map.containsKey("result") ? _map["result"] : null;
+//  set result(List value) => _map["result"] = value;
+//
+//  String get type => _map.containsKey("type") ? _map["type"] : null;
+//  set type(String value) => _map["type"] = value;
+//
+//  String get under => _map.containsKey("under") ? _map["under"] : null;
+//  set under(String value) => _map["under"] = value;
+//
+//  Data() {
+//  }
+//
+//  Data.fromJson(String json) {
+//    if (json != null) {
+//      _map = JSON.decode(json);
+//    }
+//  }
+//
+//  String toUrlEncoded() {
+//    return urlEncodeMap(_map);
+//  }
+//
+//  static String urlEncodeMap(Map<String,dynamic> data) {
+//    return data.keys.map((key) {
+//      if (data[key] != null) {
+//        if (key == "filter") {
+//          return "${Uri.encodeComponent(key)}=${Uri.encodeComponent(data[key][0])}";
+//        } else {
+//          return "${Uri.encodeComponent(key)}=${Uri.encodeComponent(data[key].toString())}";
+//        }
+//      } else {
+//        return "";
+//      }
+//    }).join("&");
+//  }
+//
+//
+//  String toJson(){
+//    return JSON.encode(_map);
+//  }
+//
+//  operator [](Object key) {
+//    return _map[key];
+//  }
+//
+//  void operator []=(String key, value) {
+//    _map[key] = value;
+//  }
+//
+//  void addAll(Map<String, dynamic> other) {
+//    _map.addAll(other);
+//  }
+//
+//  void clear() {
+//    _map.clear();
+//  }
+//
+//  bool containsKey(Object key) {
+//    return _map.containsKey(key);
+//  }
+//
+//  bool containsValue(Object value) {
+//    return _map.containsValue(value);
+//  }
+//
+//  void forEach(void f(String key, value)) {
+//    _map.forEach(f);
+//  }
+//
+//  bool get isEmpty => _map.isEmpty;
+//
+//  bool get isNotEmpty => _map.isNotEmpty;
+//
+//  Iterable<String> get keys => _map.keys;
+//
+//  int get length => _map.length;
+//
+//  putIfAbsent(String key, ifAbsent()) {
+//    return _map.put(key, ifAbsent);
+//  }
+//
+//  remove(Object key) {
+//    return _map.remove(key);
+//  }
+//
+//  Iterable get values => _map.values;
+//}
+//
+//
+//class HtmlTools {
+//  // find all siblings of the provided element
+//  static List siblings(Element element) {
+//    var siblings = new List<Element>();
+//
+//    var sibling = element.previousElementSibling;
+//
+//    while (sibling != null) {
+//      siblings.add(sibling);
+//      sibling = sibling.previousElementSibling;
+//    }
+//
+//    sibling = element.nextElementSibling;
+//
+//    while (sibling != null) {
+//      siblings.add(sibling);
+//      sibling = sibling.nextElementSibling;
+//    }
+//
+//    return siblings;
+//  }
+//
+//  // find all siblings before the provided element
+//  static List prevSiblings(Element element) {
+//    var siblings = new List<Element>();
+//
+//    var sibling = element.previousElementSibling;
+//
+//    while (sibling != null) {
+//      siblings.add(sibling);
+//      sibling = sibling.previousElementSibling;
+//    }
+//
+//    return siblings;
+//  }
+//
+//  // find all siblings after the provided element
+//  static List nextSiblings(Element element) {
+//    var siblings = new List<Element>();
+//
+//    var sibling = element.nextElementSibling;
+//
+//    while (sibling != null) {
+//      siblings.add(sibling);
+//      sibling = sibling.nextElementSibling;
+//    }
+//
+//    return siblings;
+//  }
+//
+//// hide the provided element
+//  static void hideElement(Element e) {
+//    e.style.display = "none";
+//  }
+//
+//  // show the provided element
+//  static void showElement(Element e) {
+//    e.style.display = "block";
+//  }
+//
+//  static bool isVisible(Element e) {
+//    return (e.offsetHeight + e.offsetWidth != 0);
+//  }
+//}
+//
+//class Model extends ObservableBase{
+//  @observable
+//  String options;
+//  @observable
+//  String value;
+//}
+//
+//class Option {
+//  AcParam acParam;
+//  bool advanced;
+//  String align;
+//  bool animate;
+//  CssOption css;
+//
+//  String _cssPrefix = "";
+//  String get cssPrefix => _cssPrefix;
+//  set cssPrefix(String value) => value != null ? this.cssPrefix = value : this.cssPrefix = "";
+//
+//  bool exact;
+//  List<String> filter;
+//  bool flyout;
+//  String flyoutImageServicePath;
+//  String flyoutImageServiceUrl;
+//  String flyoutImageUrl;
+//  String flyoutLang;
+//  Element flyoutParent;
+//  String flyoutServicePath;
+//  String flyoutServiceUrl;
+//  String format;
+//  String key;
+//  String lang;
+//  String mqlOutput;
+//  Map nomatch;
+//  String output;
+//  Element parent;
+//  bool prefixed;
+//  String queryParamName;
+//  String servicePath;
+//  String serviceUrl;
+//  String scoring;
+//  bool showId;
+//  bool soft;
+//  String spell;
+//  List status;
+//  bool stemmed;
+//  bool suggestNew;
+//  int xhrDelay;
+//  int zIndex;
+//
+//  Option() {
+//  }
+//
+//
+//  Option.defaults() {
+//    this.setDefaults();
+//  }
+//
+//  void setDefaults() {
+//    this.status = [
+//              "Start typing to get suggestions...",
+//              "Searching...",
+//              "Select an item from the list:",
+//              "Sorry, something went wrong. Please try again later"
+//              ];
+//    this.soft = false;
+//    this.css = new CssOption.defaults();
+//    this.parent = null;
+//    this.animate = false;
+//    this.zIndex = null;
+//
+//    /**
+//     * filter, spell, lang, exact, scoring, key, prefixed, stemmed, format
+//    *
+//     * are the new parameters used by the new freebase search on googleapis.
+//     * Please refer the the API documentation as these parameters
+//     * will be transparently passed through to the search service.
+//    *
+//     * @see http://wiki.freebase.com/wiki/ApiSearch
+//     */
+//
+//    // search filters
+//    this.filter = null;
+//
+//    // spelling corrections
+//    this.spell = "always";
+//    this.exact = true;
+//    this.scoring = null;
+//    // language to search (default to en)
+//    this.lang = null; // NULL defaults ot "en"
+//
+//    // API key: required for googleapis
+//    this.key = null;
+//
+//    this.prefixed = true;
+//    this.stemmed = null;
+//    this.format = null;
+//    // Enable structured input name:value pairs that get appended to the search filters
+//    // For example:
+//    //
+//    //   "bob dylan type:artist"
+//    //
+//    // Would get translated to the following request:
+//    //
+//    //    /freebase/v1/search?query=bob+dylan&filter=<original filter>&filter=(all type:artist)
+//    //
+//    this.advanced = true;
+//
+//    // If an item does not have a "notable" field, display the id or mid of the item
+//    this.showId = true;
+//
+//    // query param name for the search service.
+//    // If query name was "foo": search?foo=...
+//    this.queryParamName = "query";
+//
+//    // base url for autocomplete service
+//    this.serviceUrl = "https://www.googleapis.com/freebase/v1";
+//
+//    // service_url + service_path = url to autocomplete service
+//    this.servicePath = "/search";
+//
+//    // "left", "right" or null
+//    // where list will be aligned left or right with the input
+//    this.align = null;
+//
+//    // whether or not to show flyout on mouseover
+//    this.flyout = true;
+//
+//    // default is service_url if NULL
+//    this.flyoutServiceUrl = null;
+//
+//    // flyout_service_url + flyout_service_path =
+//    // url to search with output=(notable:/client/summary description type).
+//    this.flyoutServicePath = "/search?filter=(all mid:\${id})&" +
+//    "output=(notable:/client/summary description type)&key=\${key}";
+//
+//    // default is service_url if NULL
+//    this.flyoutImageServiceUrl = null;
+//
+//    this.flyoutImageServicePath=
+//      "/image\${id}?maxwidth=75&key=\${key}&errorid=/freebase/no_image_png";
+//
+//    // jQuery selector to specify where the flyout
+//    // will be appended to (defaults to document.body).
+//    this.flyoutParent = null;
+//
+//    // text snippet you want to show for the suggest
+//    // new option
+//    // clicking will trigger an fb-select-new event
+//    // along with the input value
+//    this.suggestNew = null;
+//
+//    this.nomatch = {
+//      "text": "no matches",
+//      "title": "No suggested matches",
+//      "heading": "Tips on getting better suggestions:",
+//      "tips": [
+//             "Enter more or fewer characters",
+//             "Add words related to your original search",
+//             "Try alternate spellings",
+//             "Check your spelling"
+//             ]
+//    };
+//
+//
+//    // the delay before sending off the ajax request to the
+//    // suggest and flyout service
+//    this.xhrDelay = 200;
+//  }
+//
+//  /*
+//   * see https://developers.google.com/freebase/v1/search-widget#configuration-options
+//   */
+//  Option.fromJson(String json, {bool useDefaults : true}) {
+////abstract class Status {
+////  static const String START = "START";
+////  static const String LOADING = "LOADING";
+////  static const String SELECT = "SELECT";
+////  static const String ERROR = "ERROR";
+////}
+//    if (useDefaults) {
+//      this.setDefaults();
+//    }
+//
+//    if (json != null && json.isNotEmpty) {
+//       Map<String, dynamic> map = JSON.decode(json);
+//
+//       if (map.containsKey("advanced")) this.advanced = map["advanced"] == "true";
+//       if (map.containsKey("exact")) this.exact = map["exact"] == true;
+//       if (map.containsKey("filter")) this.filter = map["filter"];
+//       if (map.containsKey("key")) this.key = map["key"];
+//       if (map.containsKey("lang")) this.lang = map["lang"];
+//       if (map.containsKey("scoring")) this.scoring = map["scoring"];
+//       if (map.containsKey("spell")) this.spell = map["spell"];
+//       if (map.containsKey("flyout")) this.flyout = map["flyout"] == "true";
+//       if (map.containsKey("suggest_new")) this.suggestNew = map["suggest_new"];
+//       if (map.containsKey("css")) this.css = new CssOption.withData(map["css"], useDefaults: useDefaults);
+//       if (map.containsKey("css_prefix")) this.cssPrefix = map["css_prefix"];
+//       if (map.containsKey("show_id")) this.showId = map["show_id"] == "true";
+//       if (map.containsKey("service_url")) this.serviceUrl = map["service_url"];
+//       if (map.containsKey("service_path")) this.servicePath = map["service_path"];
+//       if (map.containsKey("flyout_service_url")) this.flyoutImageServiceUrl = map["flyout_service_url"];
+//       if (map.containsKey("flyout_service_path")) this.flyoutServicePath = map["flyout_service_path"];
+//       if (map.containsKey("flyout_image_service_url")) this.flyoutImageServiceUrl = map["flyout_image_service_url"];
+//       if (map.containsKey("flyout_image_service_path")) this.flyoutImageServicePath = map["flyout_image_service_path"];
+//       if (map.containsKey("flyout_parent")) this.flyoutParent = document.query(map["flyout_parent"]);
+//       if (map.containsKey("align")) this.align = map["align"];
+//       if (map.containsKey("status")) this.status = map["status"];
+//       if (map.containsKey("parent")) this.parent = document.query(map["parent"]);
+//       if (map.containsKey("animate")) this.animate = map["animate"] == "true";
+//       if (map.containsKey("xhr_delay")) this.xhrDelay = map["xhr_delay"];
+//       if (map.containsKey("zIndex")) this.zIndex = map["zIndex"];
+//    }
+//  }
+//}
+//
+//
+//abstract class Status {
+//  static const String START = "START";
+//  static const String LOADING = "LOADING";
+//  static const String SELECT = "SELECT";
+//  static const String ERROR = "ERROR";
+//}

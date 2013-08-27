@@ -17,7 +17,7 @@
 import 'freebase_searchwidget_test.dart';
 import 'dart:html';
 import 'dart:async';
-import 'package:freebase_searchwidget/components/freebase_searchwidget.dart';
+import '../lib/components/freebase_searchwidget.dart';
 
 
 void main() {

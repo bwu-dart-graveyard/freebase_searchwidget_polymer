@@ -14,26 +14,39 @@
 import 'dart:html';
 import 'dart:async';
 import 'package:freebase_searchwidget/components/freebase_searchwidget.dart';
+// import 'package:mdv/mdv.dart' as mdv; // only for deployment
 
 
+void main() { ////<Key generated from https://code.google.com/apis/console>",
 
-void main() {
-  String options = """{
-            "key": "<Key generated from https://code.google.com/apis/console>",
+  //mdv.initialize(); // only for deployment
+  var model = new Model();
+  model.options = """{
+            "key": "AIzaSyDzIKedktcPEY1JxzQrYuZOxjuSG5mWtNk", 
             "filter": ["(all domain:/film)"],
             "lang": "de,en",
             "animate": true
             }""";
-  // mdv.initialize(); wird nicht mehr benötigt wenn polymer/boot.js verwendet wird
-  //var model = new Model(options);
 
+  model.value = '';
+
+  var tmpl = query('#tmpl');
+  tmpl.model = model;
+  
   Timer.run(() {
-    FreebaseSearchwidget fb = query('#freebase-searchwidget-left').xtag;
-    fb.options = options;
-    fb.init();
+  //FreebaseSearchwidget fb = query('#freebase-searchwidget-left').xtag; // TODO change Dart bug is resolved
+  FreebaseSearchwidget fbl = query('#freebase-searchwidget-left').xtag;
+  FreebaseSearchwidget fbr = query('#freebase-searchwidget-right').xtag;
 
-    fb = query('#freebase-searchwidget-right').xtag;
-    fb.options = options;
-    fb.init();
+  // Example how to register for Freebase Searchwidget events
+  FreebaseSearchwidget.onFbTextChange.forTarget(fbl).listen((d) {
+      model.value = fbl.value;
+      print(fbl.value);
+    });
+  FreebaseSearchwidget.onFbSelect.forTarget(fbl).listen((d) {
+    model.value = fbl.value;
+    print(fbl.value);
+  });
+
   });
 }

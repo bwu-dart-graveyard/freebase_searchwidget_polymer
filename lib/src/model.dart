@@ -11,9 +11,9 @@
 
 part of freebase_searchwidget;
 
-abstract class Status {
-  static const String START = "START";
-  static const String LOADING = "LOADING";
-  static const String SELECT = "SELECT";
-  static const String ERROR = "ERROR";
+class Model extends ObservableBase{
+  @observable
+  String options = "";
+  @observable
+  String value = "";
 }

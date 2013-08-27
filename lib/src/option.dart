@@ -18,9 +18,9 @@ class Option {
   bool animate;
   CssOption css;
 
-  String _cssPrefix = '';
+  String _cssPrefix = "";
   String get cssPrefix => _cssPrefix;
-  set cssPrefix(String value) => value != null ? this.cssPrefix = value : this.cssPrefix = '';
+  set cssPrefix(String value) => value != null ? this.cssPrefix = value : this.cssPrefix = "";
 
   bool exact;
   List<String> filter;
@@ -63,10 +63,10 @@ class Option {
 
   void setDefaults() {
     this.status = [
-              'Start typing to get suggestions...',
-              'Searching...',
-              'Select an item from the list:',
-              'Sorry, something went wrong. Please try again later'
+              "Start typing to get suggestions...",
+              "Searching...",
+              "Select an item from the list:",
+              "Sorry, something went wrong. Please try again later"
               ];
     this.soft = false;
     this.css = new CssOption.defaults();
@@ -124,7 +124,7 @@ class Option {
     // service_url + service_path = url to autocomplete service
     this.servicePath = "/search";
 
-    // 'left', 'right' or null
+    // "left", "right" or null
     // where list will be aligned left or right with the input
     this.align = null;
 
@@ -156,14 +156,14 @@ class Option {
     this.suggestNew = null;
 
     this.nomatch = {
-      'text': 'no matches',
-      'title': 'No suggested matches',
-      'heading': 'Tips on getting better suggestions:',
-      'tips': [
-             'Enter more or fewer characters',
-             'Add words related to your original search',
-             'Try alternate spellings',
-             'Check your spelling'
+      "text": "no matches",
+      "title": "No suggested matches",
+      "heading": "Tips on getting better suggestions:",
+      "tips": [
+             "Enter more or fewer characters",
+             "Add words related to your original search",
+             "Try alternate spellings",
+             "Check your spelling"
              ]
     };
 
@@ -185,31 +185,31 @@ class Option {
     if (json != null && json.isNotEmpty) {
        Map<String, dynamic> map = JSON.decode(json);
 
-       if (map.containsKey('advanced')) this.advanced = map['advanced'] == 'true';
-       if (map.containsKey('exact')) this.exact = map['exact'] == true;
-       if (map.containsKey('filter')) this.filter = map['filter'];
-       if (map.containsKey('key')) this.key = map['key'];
-       if (map.containsKey('lang')) this.lang = map['lang'];
-       if (map.containsKey('scoring')) this.scoring = map['scoring'];
-       if (map.containsKey('spell')) this.spell = map['spell'];
-       if (map.containsKey('flyout')) this.flyout = map['flyout'] == 'true';
-       if (map.containsKey('suggest_new')) this.suggestNew = map['suggest_new'];
-       if (map.containsKey('css')) this.css = new CssOption.withData(map['css'], useDefaults: useDefaults);
-       if (map.containsKey('css_prefix')) this.cssPrefix = map['css_prefix'];
-       if (map.containsKey('show_id')) this.showId = map['show_id'] == 'true';
-       if (map.containsKey('service_url')) this.serviceUrl = map['service_url'];
-       if (map.containsKey('service_path')) this.servicePath = map['service_path'];
-       if (map.containsKey('flyout_service_url')) this.flyoutImageServiceUrl = map['flyout_service_url'];
-       if (map.containsKey('flyout_service_path')) this.flyoutServicePath = map['flyout_service_path'];
-       if (map.containsKey('flyout_image_service_url')) this.flyoutImageServiceUrl = map['flyout_image_service_url'];
-       if (map.containsKey('flyout_image_service_path')) this.flyoutImageServicePath = map['flyout_image_service_path'];
-       if (map.containsKey('flyout_parent')) this.flyoutParent = document.query(map['flyout_parent']);
-       if (map.containsKey('align')) this.align = map['align'];
-       if (map.containsKey('status')) this.status = map['status'];
-       if (map.containsKey('parent')) this.parent = document.query(map['parent']);
-       if (map.containsKey('animate')) this.animate = map['animate'] == 'true';
-       if (map.containsKey('xhr_delay')) this.xhrDelay = map['xhr_delay'];
-       if (map.containsKey('zIndex')) this.zIndex = map['zIndex'];
+       if (map.containsKey("advanced")) this.advanced = map["advanced"] == "true";
+       if (map.containsKey("exact")) this.exact = map["exact"] == true;
+       if (map.containsKey("filter")) this.filter = map["filter"];
+       if (map.containsKey("key")) this.key = map["key"];
+       if (map.containsKey("lang")) this.lang = map["lang"];
+       if (map.containsKey("scoring")) this.scoring = map["scoring"];
+       if (map.containsKey("spell")) this.spell = map["spell"];
+       if (map.containsKey("flyout")) this.flyout = map["flyout"] == "true";
+       if (map.containsKey("suggest_new")) this.suggestNew = map["suggest_new"];
+       if (map.containsKey("css")) this.css = new CssOption.withData(map["css"], useDefaults: useDefaults);
+       if (map.containsKey("css_prefix")) this.cssPrefix = map["css_prefix"];
+       if (map.containsKey("show_id")) this.showId = map["show_id"] == "true";
+       if (map.containsKey("service_url")) this.serviceUrl = map["service_url"];
+       if (map.containsKey("service_path")) this.servicePath = map["service_path"];
+       if (map.containsKey("flyout_service_url")) this.flyoutImageServiceUrl = map["flyout_service_url"];
+       if (map.containsKey("flyout_service_path")) this.flyoutServicePath = map["flyout_service_path"];
+       if (map.containsKey("flyout_image_service_url")) this.flyoutImageServiceUrl = map["flyout_image_service_url"];
+       if (map.containsKey("flyout_image_service_path")) this.flyoutImageServicePath = map["flyout_image_service_path"];
+       if (map.containsKey("flyout_parent")) this.flyoutParent = document.query(map["flyout_parent"]);
+       if (map.containsKey("align")) this.align = map["align"];
+       if (map.containsKey("status")) this.status = map["status"];
+       if (map.containsKey("parent")) this.parent = document.query(map["parent"]);
+       if (map.containsKey("animate")) this.animate = map["animate"] == "true";
+       if (map.containsKey("xhr_delay")) this.xhrDelay = map["xhr_delay"];
+       if (map.containsKey("zIndex")) this.zIndex = map["zIndex"];
     }
   }
 }

@@ -44,14 +44,14 @@ class CssOption {
     }
 
     if (data != null) {
-      if (data.containsKey('pane')) this.pane = data['pane'];
-      if (data.containsKey('list')) this.list = data['list'];
-      if (data.containsKey('item')) this.item = data['item'];
-      if (data.containsKey('item_name')) this.itemName = data['item_name'];
-      if (data.containsKey('selected')) this.selected = data['selected'];
-      if (data.containsKey('status')) this.status = data['status'];
-      if (data.containsKey('item_type')) this.itemType = data['item_type'];
-      if (data.containsKey('flyoutpane')) this.flyoutPane = data['flyoutpane'];
+      if (data.containsKey("pane")) this.pane = data["pane"];
+      if (data.containsKey("list")) this.list = data["list"];
+      if (data.containsKey("item")) this.item = data["item"];
+      if (data.containsKey("item_name")) this.itemName = data["item_name"];
+      if (data.containsKey("selected")) this.selected = data["selected"];
+      if (data.containsKey("status")) this.status = data["status"];
+      if (data.containsKey("item_type")) this.itemType = data["item_type"];
+      if (data.containsKey("flyoutpane")) this.flyoutPane = data["flyoutpane"];
     }
   }
 

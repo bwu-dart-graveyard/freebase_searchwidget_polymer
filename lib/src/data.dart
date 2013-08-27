@@ -14,44 +14,44 @@ part of freebase_searchwidget;
 class Data implements Map<String,dynamic>{
   var _map = new Map<String,dynamic>();
 
-  int get cost => _map.containsKey('cost') ? _map['cost'] : null;
-  set cost(int value) => _map['cost'] = value;
+  int get cost => _map.containsKey("cost") ? _map["cost"] : null;
+  set cost(int value) => _map["cost"] = value;
 
-  String get correction => _map.containsKey('correction') ? _map['correction'] : null;
-  set correction(String value) => _map['correction'] = value;
+  String get correction => _map.containsKey("correction") ? _map["correction"] : null;
+  set correction(String value) => _map["correction"] = value;
 
-  int get cursor => _map.containsKey('cursor') ? _map['cursor'] : null;
-  set cursor(int value) => _map['cursor'] = value;
+  int get cursor => _map.containsKey("cursor") ? _map["cursor"] : null;
+  set cursor(int value) => _map["cursor"] = value;
 
-  String get id => _map['id']; //_map.containsKey('id') ? _map['id'] : null;
-  set id(String value) => _map['id'] = value;
+  String get id => _map["id"]; //_map.containsKey("id") ? _map["id"] : null;
+  set id(String value) => _map["id"] = value;
 
-  List get filter => _map.containsKey('filter') ? _map['filter'] : null;
-  set filter(List value) => _map['filter'] = value;
+  List get filter => _map.containsKey("filter") ? _map["filter"] : null;
+  set filter(List value) => _map["filter"] = value;
 
-  String get mid => _map.containsKey('mid') ? _map['mid'] : null;
-  set mid(String value) => _map['mid'] = value;
+  String get mid => _map.containsKey("mid") ? _map["mid"] : null;
+  set mid(String value) => _map["mid"] = value;
 
-  String get name => _map.containsKey('name') ? _map['name'] : null;
-  set name(String value) => _map['name'] = value;
+  String get name => _map.containsKey("name") ? _map["name"] : null;
+  set name(String value) => _map["name"] = value;
 
-  DivElement get html => _map.containsKey('html') ? _map['html'] : null;
-  set html(DivElement value) => _map['html'] = value;
+  DivElement get html => _map.containsKey("html") ? _map["html"] : null;
+  set html(DivElement value) => _map["html"] = value;
 
-  Map get notable => _map.containsKey('notable') ? _map['notable'] : null;
-  set notable(Map value) => _map['notable'] = value;
+  Map get notable => _map.containsKey("notable") ? _map["notable"] : null;
+  set notable(Map value) => _map["notable"] = value;
 
-  String get prefix => _map.containsKey('prefix') ? _map['prefix'] : null;
-  set prefix(String value) => _map['prefix'] = value;
+  String get prefix => _map.containsKey("prefix") ? _map["prefix"] : null;
+  set prefix(String value) => _map["prefix"] = value;
 
-  List get result => _map.containsKey('result') ? _map['result'] : null;
-  set result(List value) => _map['result'] = value;
+  List get result => _map.containsKey("result") ? _map["result"] : null;
+  set result(List value) => _map["result"] = value;
 
-  String get type => _map.containsKey('type') ? _map['type'] : null;
-  set type(String value) => _map['type'] = value;
+  String get type => _map.containsKey("type") ? _map["type"] : null;
+  set type(String value) => _map["type"] = value;
 
-  String get under => _map.containsKey('under') ? _map['under'] : null;
-  set under(String value) => _map['under'] = value;
+  String get under => _map.containsKey("under") ? _map["under"] : null;
+  set under(String value) => _map["under"] = value;
 
   Data() {
   }
@@ -69,13 +69,13 @@ class Data implements Map<String,dynamic>{
   static String urlEncodeMap(Map<String,dynamic> data) {
     return data.keys.map((key) {
       if (data[key] != null) {
-        if (key == 'filter') {
-          return '${Uri.encodeComponent(key)}=${Uri.encodeComponent(data[key][0])}';
+        if (key == "filter") {
+          return "${Uri.encodeComponent(key)}=${Uri.encodeComponent(data[key][0])}";
         } else {
-          return '${Uri.encodeComponent(key)}=${Uri.encodeComponent(data[key].toString())}';
+          return "${Uri.encodeComponent(key)}=${Uri.encodeComponent(data[key].toString())}";
         }
       } else {
-        return '';
+        return "";
       }
     }).join("&");
   }

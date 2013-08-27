@@ -3,8 +3,7 @@
 <body>
   <polymer-element name="freebase-searchwidget" attributes="options,value"> <!-- attributes="advanced exact filter key lang scoring spell flyout suggest_new css css_prefix show_id service_url service_path flyout_service_url flyout_service_path flyout_image_service_url flyout_image_service_path flyout_parent align status parent animate xhr_delay zIndex" -->
     <template>
-      <input id='inputElement' type="text"/>
-      <!--<span>{{options}}</span> --> <!-- TODO for debugging purposes - remove if fixed -->
+      <input id="inputElement" type="text" value="{{value}}" />
     </template>
 
     <script type="application/dart" src="freebase_searchwidget.dart">

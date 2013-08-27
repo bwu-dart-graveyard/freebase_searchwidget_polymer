@@ -13,53 +13,42 @@
 
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <title>Freebase Search Widget example</title>
 
     <!-- Freebase Suggest -->
-    <link type='text/css' rel='stylesheet' href='https://www.gstatic.com/freebase/suggest/4_2/suggest.min.css' />
-
-    <!-- for the JS version of Freebase Suggest (doesn't work due to a bug in Chrome/jQuery - or is it my fault :-( ) -->
-    <!-- <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js'></script>
-    <script type='text/javascript' src='https://www.gstatic.com/freebase/suggest/4_2/suggest.min.js'></script> -->
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/freebase/suggest/4_2/suggest.min.css" />
 
     <!-- import suggest component -->
     <link rel="import" href="packages/freebase_searchwidget/components/freebase_searchwidget.html">
 
-    <script src='packages/polymer/boot.js'></script>
-
-    <!--<script type='text/javascript'>
-      $(function() {
-        $('#movieSearch').suggest({key: 'AIzaSyCGcQIahaw_mGvvx_XbFxDjyc_SEEdgAMc',
-                                filter:'(all domain:/film)',
-                                lang: 'de,en',
-                                animate: true});
-        $('#movieSearch-right').suggest({key: 'AIzaSyCGcQIahaw_mGvvx_XbFxDjyc_SEEdgAMc',
-                                filter:'(all domain:/film)',
-                                lang: 'de,en',
-                                animate: true});
-
-      });
-    </script> -->
+    <script src="packages/polymer/boot.js"></script>
 
   </head>
   <body>
-      <!--<p><input type='text' id='movieSearch'></p>
-      <p><input type='text' id='movieSearch-right' class='pull-right'></p> -->
+    <script type="text/javascript">
+      window.addEventListener("fb-textchange", function(e) {
+        window.alert("text changed");
+      }
+      
+      // TODO test events from JS
+      textchange(v) {
+        window.alert(v);
+      }
+    </script>
+    <div>
+    <template id="tmpl" bind>
         <p>
-        <freebase-searchwidget id='freebase-searchwidget-left' options="xxx" value='yyy'></freebase-searchwidget>
-          <!--{
-            'key': 'AIzaSyCGcQIahaw_mGvvx_XbFxDjyc_SEEdgAMc'
-            'filter': ['(all domain:/film)'],
-            'lang': 'de,en',
-            'animate': true
-            }"></freebase-searchwidget>-->
+        <freebase-searchwidget id="freebase-searchwidget-left" options="{{options}}" value="{{value}}"></freebase-searchwidget>
         </p>
+        <p>{{value}}</p>
         <p>
-          <freebase-searchwidget id='freebase-searchwidget-right' options="yyy" style='position:absolute; right:0px;'></freebase-searchwidget>
+          <freebase-searchwidget id="freebase-searchwidget-right" options="{{options}}" value="{{value}}" style="position:absolute; right:0px;"></freebase-searchwidget>
         </p>
-
-    <script type='application/dart' src='index.dart'></script>
-    <!-- <script type='text/javascript' src='packages/browser/dart.js'></script> -->
+    </template>
+    <freebase-searchwidget id="onlyasbugworkaround" value="{{''}}" style="display:none; visibility:hidden" options="{{''}}"></freebase-searchwidget>
+    </div>
+    <script type="application/dart" src="index.dart"></script>
+    <!--<script type="text/javascript" src="packages/browser/dart.js"></script>-->
   </body>
 </html>

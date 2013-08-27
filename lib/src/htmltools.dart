@@ -12,7 +12,7 @@
 part of freebase_searchwidget;
 
 
-class HtmlTools {
+abstract class HtmlTools {
   // find all siblings of the provided element
   static List siblings(Element element) {
     var siblings = new List<Element>();
@@ -64,12 +64,12 @@ class HtmlTools {
 
 // hide the provided element
   static void hideElement(Element e) {
-    e.style.display = 'none';
+    e.style.display = "none";
   }
 
   // show the provided element
   static void showElement(Element e) {
-    e.style.display = 'block';
+    e.style.display = "block";
   }
 
   static bool isVisible(Element e) {

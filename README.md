@@ -17,6 +17,7 @@ To some extend the API can be used without an API key at least if you use the Sa
 * The original Freebase Search Widget provides several custom Events. None of them are implemented yet.
 * Due to limitations of Polymer.dart the options can not be set as an attribute in HTML.
 The [options](https://developers.google.com/freebase/v1/search-widget#configuration-options) can currently only be set by code as in the file index.dart.
+* Couldn't get it working with dart2js yet.
 
 
 ## TODO

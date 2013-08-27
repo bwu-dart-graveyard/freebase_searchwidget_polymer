@@ -1,10 +1,16 @@
 name: freebase_searchwidget
-version: 0.0.1
-author: Günter Zöchbauer
+version: 0.1.2
+author: Günter Zöchbauer <guenter@gzoechbauer.com>
+homepage: https://github.com/zoechi/dart-freebase-search-widget
 description: Port of Freebase Suggest 4.2 Javascript code to Dart
+environment:
+  sdk: any
 dependencies:
   polymer: any
   animation: any
+  mdv: any
+  browser: any
+  #shadow_dom: any
 
 dev_dependencies:
   unittest: any
