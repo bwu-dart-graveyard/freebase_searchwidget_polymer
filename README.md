@@ -17,7 +17,7 @@ The files index.html/index.dart in the test subdirectory contain a simple exampl
 
 ## Known issues:
 * Due to limitations of Polymer.dart the options can not be set as a const literal attribute value in HTML.
-The [options](https://developers.google.com/freebase/v1/search-widget#configuration-options) can currently only be set by code as in the file index.dart.
+The [options](https://developers.google.com/freebase/v1/search-widget#configuration-options) can currently only be set by code like in the file test/index.dart.
 * Couldn't get it working with dart2js yet.
 
 
