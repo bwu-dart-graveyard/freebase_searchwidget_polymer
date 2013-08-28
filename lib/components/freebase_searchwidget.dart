@@ -54,12 +54,12 @@ import "package:polymer/polymer.dart";
 import "package:animation/animation.dart";
 import "package:meta/meta.dart";
 
+part "model.dart";
 part "../src/data.dart";
 part "../src/status_enum.dart";
 part "../src/cssoption.dart";
 part "../src/acparam.dart";
 part "../src/option.dart";
-part "../src/model.dart";
 part "../src/htmltools.dart";
 
 
