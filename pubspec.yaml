@@ -8,8 +8,8 @@ environment:
 dependencies:
   polymer: any
   animation: any
-  mdv: any
+#  mdv: any
   browser: any
-
+  
 dev_dependencies:
   unittest: any

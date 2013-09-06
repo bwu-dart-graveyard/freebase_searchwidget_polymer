@@ -195,10 +195,12 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
   static EventStreamProvider<CustomEvent> _onTextChange = new EventStreamProvider<CustomEvent>("textchange");
 
 
+  bool get applyAuthorStyles => true;
+  
 @override
 created() {
   super.created();
-  //shadowRoot.applyAuthorStyles = true;
+  
 }
   
 @override
