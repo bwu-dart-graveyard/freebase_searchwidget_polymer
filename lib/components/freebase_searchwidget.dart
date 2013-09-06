@@ -570,7 +570,7 @@ inserted() {
       }
       else if (this._listElement.queryAll("." + o.css.item).length > 0) {
         var s = this._getSelected();
-        if (s) {
+        if (s != null) {
           this._onSelect(s);
           this._hideAll();
           e.preventDefault();
