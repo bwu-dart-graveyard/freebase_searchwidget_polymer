@@ -14,6 +14,7 @@ To some extend the API can be used without an API key at least if you use the Sa
 
 ## Demo
 I have created a very simple [demo page](http://zoechi.github.io/dart-freebase-search-widget/index.html) with just two instances of the component (one left aligned, the other right aligned). Just set the focus and start typing ...
+The demo currently works in Google Chrome and Chromium but not yet in Firefox (I didn't yet try others)
 
 ## Usage
 The files index.html/index.dart in the test subdirectory contain a simple example.
