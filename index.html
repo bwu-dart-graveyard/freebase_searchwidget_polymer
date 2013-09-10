@@ -1,0 +1,47 @@
+<!DOCTYPE html><!--
+ This file is part of "Dart Freebase Search Widget". It is subject to the
+ license terms in the LICENSE file found in the top-level directory of this
+ distribution and at
+ https://github.com/zoechi/dart-freebase-search-widget/blob/master/LICENSE.
+
+ No part of "Dart Freebase Search Widget", including this file, may be
+ copied, modified, propagated, or distributed except according to the terms
+ contained in the LICENSE file.
+--><html><head>
+    <meta charset="utf-8">
+    <title>Freebase Search Widget example</title>
+
+    <!-- Freebase Suggest -->
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/freebase/suggest/4_2/suggest.min.css">
+
+    <!-- import suggest component -->
+    
+
+    
+
+  </head>
+  <body><script src="packages/shadow_dom/shadow_dom.debug.js"></script>
+<script src="packages/browser/interop.js"></script>
+<script src="packages/js/dart_interop.js"></script>
+<polymer-element name="freebase-searchwidget" attributes="options,value"> <!-- attributes="advanced exact filter key lang scoring spell flyout suggest_new css css_prefix show_id service_url service_path flyout_service_url flyout_service_path flyout_image_service_url flyout_image_service_path flyout_parent align status parent animate xhr_delay zIndex" -->
+  <template>
+    <input id="inputElement" type="text" value="{{value}}">
+  </template>
+
+  
+
+</polymer-element>
+    <template id="tmpl" bind="">
+        <p>
+        <freebase-searchwidget id="freebase-searchwidget-left" options="{{options}}" value="{{value}}"></freebase-searchwidget>
+        </p>
+        <p>
+          <freebase-searchwidget id="freebase-searchwidget-right" options="{{options}}" value="{{value}}" style="position:absolute; right:0px;"></freebase-searchwidget>
+        </p>
+    </template>
+    
+    
+    <!-- <script type='text/javascript' src='packages/browser/dart.js'></script> -->
+  
+
+<script type="application/dart" src="index.html_bootstrap.dart"></script><script src="packages/browser/dart.js"></script></body></html>
