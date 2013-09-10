@@ -12,6 +12,9 @@ An API key for the Google Freebase API is necessary.
 You can obtain a key at [Google API Console](https://code.google.com/apis/console) (see also [Obtaining an API key](https://developers.google.com/freebase/v1/search-widget#obtaining-an-api-key)).
 To some extend the API can be used without an API key at least if you use the Sandbox version of the API.
 
+## Demo
+I have created a very simple [demo page](http://zoechi.github.io/dart-freebase-search-widget/index.html) with just two instances of the component (one left aligned, the other right aligned). Just set the focus and start typing ...
+
 ## Usage
 The files index.html/index.dart in the test subdirectory contain a simple example.
 
@@ -23,7 +26,6 @@ The [options](https://developers.google.com/freebase/v1/search-widget#configurat
 
 ## TODO
 * Write tests.
-* Check build/dart2js regular after each available Dart update.
 
 ## Additional authors
 * Dae Park (daepark@google.com) Built the original JavaScript version this project is derived from.
