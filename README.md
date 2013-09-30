@@ -12,7 +12,8 @@ BSD 3-clause license (see [LICENSE](https://github.com/zoechi/dart-freebase-sear
 ## Changelog
 ### 2013-09-30
 * Updated to latest Dart SDK Dart SDK version 0.7.6.1_r28029
-* Getters for custom events added at the element instance 
+* Getters for custom events added at the element instance
+* Flyout works now at the demo site (fixed API-Key settings)  
 * Minor fixes
 
 ### Freebase API key
