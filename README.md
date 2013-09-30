@@ -7,6 +7,12 @@ Dart port of Google's [Freebase Search Widget](https://developers.google.com/fre
 ### License
 BSD 3-clause license (see [LICENSE](https://github.com/zoechi/dart-freebase-search-widget/blob/master/LICENSE) file).
 
+### Changelog
+## 2013-09-30
+* Updated to latest Dart SDK Dart SDK version 0.7.6.1_r28029
+* Getters for custom events added at the element instance 
+* Minor fixes
+
 ### Freebase API key
 An API key for the Google Freebase API is necessary.
 You can obtain a key at [Google API Console](https://code.google.com/apis/console) (see also [Obtaining an API key](https://developers.google.com/freebase/v1/search-widget#obtaining-an-api-key)).
