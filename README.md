@@ -7,6 +7,8 @@ Dart port of Google's [Freebase Search Widget](https://developers.google.com/fre
 ### License
 BSD 3-clause license (see [LICENSE](https://github.com/zoechi/dart-freebase-search-widget/blob/master/LICENSE) file).
 
+[![Build Status](https://drone.io/github.com/zoechi/dart-freebase-search-widget/status.png)](https://drone.io/github.com/zoechi/dart-freebase-search-widget/latest)
+
 ## Changelog
 ### 2013-09-30
 * Updated to latest Dart SDK Dart SDK version 0.7.6.1_r28029
