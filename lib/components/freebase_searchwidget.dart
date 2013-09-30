@@ -181,16 +181,35 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
   var _onresize;
 
   // fires on every keypress not only when input looses focus
-  static EventStreamProvider<CustomEvent> onFbTextChange = new EventStreamProvider<CustomEvent>("fb-textchange");
-  static EventStreamProvider<CustomEvent> onFbPaneShow = new EventStreamProvider<CustomEvent>("fb-pane-show");
-  static EventStreamProvider<CustomEvent> onFbPaneHide = new EventStreamProvider<CustomEvent>("fb-pane-hide");
-  static EventStreamProvider<CustomEvent> onFbSelect = new EventStreamProvider<CustomEvent>("fb-select");
-  static EventStreamProvider<CustomEvent> onFbTrackEvent = new EventStreamProvider<CustomEvent>("fb-track-event");
-  static EventStreamProvider<CustomEvent> onFbFlyoutPaneHide = new EventStreamProvider<CustomEvent>("fb-flyoutpane-hide");
-  static EventStreamProvider<CustomEvent> onFbFlyoutPaneShow = new EventStreamProvider<CustomEvent>("fb-flyoutpane-show");
-  static EventStreamProvider<CustomEvent> onFbError = new EventStreamProvider<CustomEvent>("fb-error");
-  static EventStreamProvider<CustomEvent> onFbSelectNew = new EventStreamProvider<CustomEvent>("fb-select-new");
-  static EventStreamProvider<CustomEvent> onFbRequestFlyout = new EventStreamProvider<CustomEvent>("fb-request-flyout");
+  static EventStreamProvider<CustomEvent> fbTextChange = new EventStreamProvider<CustomEvent>("fb-textchange");
+  Stream<CustomEvent> get onFbTextChange =>  FreebaseSearchwidget.fbTextChange.forTarget(this);
+  
+  static EventStreamProvider<CustomEvent> fbPaneShow = new EventStreamProvider<CustomEvent>("fb-pane-show");
+  Stream<CustomEvent> get onFbPaneShow =>  FreebaseSearchwidget.fbPaneShow.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbPaneHide = new EventStreamProvider<CustomEvent>("fb-pane-hide");
+  Stream<CustomEvent> get onFbPaneHide =>  FreebaseSearchwidget.fbPaneHide.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbSelect = new EventStreamProvider<CustomEvent>("fb-select");
+  Stream<CustomEvent> get onFbSelect =>  FreebaseSearchwidget.fbSelect.forTarget(this);
+  
+  static EventStreamProvider<CustomEvent> fbTrackEvent = new EventStreamProvider<CustomEvent>("fb-track-event");
+  Stream<CustomEvent> get onFbTrackEvent =>  FreebaseSearchwidget.fbTrackEvent.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbFlyoutPaneHide = new EventStreamProvider<CustomEvent>("fb-flyoutpane-hide");
+  Stream<CustomEvent> get onFbFlyoutPaneHide =>  FreebaseSearchwidget.fbFlyoutPaneHide.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbFlyoutPaneShow = new EventStreamProvider<CustomEvent>("fb-flyoutpane-show");
+  Stream<CustomEvent> get onFbFlyoutPaneShow =>  FreebaseSearchwidget.fbFlyoutPaneShow.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbError = new EventStreamProvider<CustomEvent>("fb-error");
+  Stream<CustomEvent> get onFbError =>  FreebaseSearchwidget.fbError.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbSelectNew = new EventStreamProvider<CustomEvent>("fb-select-new");
+  Stream<CustomEvent> get onFbSelectNew =>  FreebaseSearchwidget.fbSelectNew.forTarget(this);
+
+  static EventStreamProvider<CustomEvent> fbRequestFlyout = new EventStreamProvider<CustomEvent>("fb-request-flyout");
+  Stream<CustomEvent> get onFbRequestFlyout =>  FreebaseSearchwidget.fbRequestFlyout.forTarget(this);
 
   static EventStreamProvider<CustomEvent> _onTextChange = new EventStreamProvider<CustomEvent>("textchange");
 
@@ -288,8 +307,9 @@ inserted() {
     s.classes.add(css.status);
     var l = new UListElement();
     l.classes.add(css.list);
-    var p = new DivElement();
-    p.style.display = "none";
+    var p = new DivElement()
+    ..style.display = "none"
+    ..style.zIndex = "1500";
     p.classes
       ..add("fbs-reset")
       ..add(css.pane);
@@ -558,11 +578,11 @@ inserted() {
 
   _enter(e) {
     var o = this._options;
-    var visible = HtmlTools.isVisible(this._paneElement);
+    var isVisible = HtmlTools.isVisible(this._paneElement);
 
     //console.log("_enter", visible);
 
-    if (visible) {
+    if (isVisible) {
       if (e.shiftKey) {
         this._shiftEnter(e);
         e.preventDefault();
@@ -650,7 +670,7 @@ inserted() {
       else if (cur.length == null || cur.length == 0) {
         this._goto(last);
       }
-      else if (cur[0] == first[0]) {
+      else if (cur[0] == first) {
         first.classes.remove(css.selected);
         this._inputElement.value = this._inputElement.dataset["original"];
         this.value = this._inputElement.value;
@@ -668,7 +688,7 @@ inserted() {
       else if (cur.length == 0) {
         this._goto(first);
       }
-      else if (cur[0] == last[0]) {
+      else if (cur[0] == last) {
         last.classes.remove(css.selected);
         this._inputElement.value = this._inputElement.dataset["original"];
         this.value = this._inputElement.value;
@@ -692,18 +712,18 @@ inserted() {
 
   _scrollTo(LIElement item) {
     var l = this._listElement,
-        scrollTop = l.scrollTop(),
-        scrollBottom = scrollTop + l.innerHeight(),
-        item_height = item.borderEdge.height; //outerHeight(),
+        scrollTop = l.scrollTop,
+        scrollBottom = scrollTop + l.clientHeight; // innerHeight(),
+        var item_height = item.borderEdge.height; //outerHeight(),
         var offsetTop = HtmlTools.prevSiblings(item).length * item_height,
         offsetBottom = offsetTop + item_height;
     if (offsetTop < scrollTop) {
       this._ignoreMouseover();
-      l.scrollTop(offsetTop);
+      l.scrollTop = offsetTop;
     }
     else if (offsetBottom > scrollBottom) {
       this._ignoreMouseover();
-      l.scrollTop(scrollTop + offsetBottom - scrollBottom);
+      l.scrollTop = scrollTop + offsetBottom - scrollBottom;
     }
   }
 
@@ -1302,7 +1322,7 @@ inserted() {
       this._trackEvent("name", "request", "count", calls);
       this._inputElement.dataset["request.count.suggest"] = calls.toString();
     })
-    ..onLoadEnd.listen((HttpRequestProgressEvent e) {
+    ..onLoadEnd.listen((ProgressEvent e) {
       if (request.status == 200) {
         data = new Data.fromJson(request.responseText);
         this._cache[url] = data;
@@ -1310,7 +1330,7 @@ inserted() {
         this._response(data, cursor != null ? cursor : -1);
       }
     })
-    ..onReadyStateChange.listen((HttpRequestProgressEvent e) {
+    ..onReadyStateChange.listen((ProgressEvent e) {
       if(request.readyState == HttpRequest.DONE) {
           this._trackEvent("name", "request", "tid");
           //request.getResponseHeader("X-Metaweb-TID")); // has to be enabled - how?
@@ -1482,7 +1502,7 @@ inserted() {
         // create suggestnew option
         var button = new ButtonElement();
         button.classes.add("fbs-suggestnew-button");
-        button.text(o.suggestNew);
+        button.text = o.suggestNew;
         suggestnew = new DivElement();
         suggestnew.classes.add("fbs-suggestnew");
         var tmpDiv = new DivElement();
@@ -1671,7 +1691,7 @@ inserted() {
       else {
         pos = new Point(pos.x, pos.y + p.offset.height);
       }
-      fp.addClass(css.flyoutpane + "-bottom");
+      fp.classes.add(css.flyoutPane + "-bottom");
     }
     else {
       pos = item.borderEdge.topLeft;
@@ -1766,7 +1786,7 @@ inserted() {
                 cvts.add(v);
               }
             });
-            value = value["value"];
+            value = value["value"] as String;
             if (cvts.length > 0) {
               value += " (" + cvts.join(", ") + ")";
             }

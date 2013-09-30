@@ -1,5 +1,5 @@
 name: freebase_searchwidget
-version: 0.1.3
+version: 0.2.0
 author: Günter Zöchbauer <guenter@gzoechbauer.com>
 homepage: https://github.com/zoechi/dart-freebase-search-widget
 description: Dart port of Google's Freebase Suggest 4.2 Javascript/jQuery component.
