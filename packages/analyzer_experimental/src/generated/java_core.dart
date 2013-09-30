@@ -31,13 +31,10 @@ bool isInstanceOf(o, Type t) {
   if (oTypeName == tTypeName) {
     return true;
   }
-  if (oTypeName.startsWith("HashMap") && tTypeName == "Map") {
-    return true;
-  }
-  if (oTypeName.startsWith("LinkedHashMap") && tTypeName == "Map") {
-    return true;
-  }
   if (oTypeName.startsWith("List") && tTypeName == "List") {
+    return true;
+  }
+  if (tTypeName == "Map" && o is Map) {
     return true;
   }
   // Dart Analysis Engine specific
@@ -505,6 +502,10 @@ bool javaSetAdd(Set s, o) {
   return false;
 }
 
+bool javaCollectionContainsAll(Iterable list, Iterable c) {
+  return c.fold(true, (bool prev, e) => prev && list.contains(e));
+}
+
 javaMapPut(Map target, key, value) {
   var oldValue = target[key];
   target[key] = value;
@@ -564,4 +565,22 @@ abstract class Enum<E extends Enum> implements Comparable<E> {
   int get hashCode => ordinal;
   String toString() => name;
   int compareTo(E other) => ordinal - other.ordinal;
+}
+
+class JavaPatternMatcher {
+  Iterator<Match> _matches;
+  Match _match;
+  JavaPatternMatcher(RegExp re, String input) {
+    _matches = re.allMatches(input).iterator;
+  }
+  bool find() {
+    if (!_matches.moveNext()) {
+      return false;
+    }
+    _match = _matches.current;
+    return true;
+  }
+  String group(int i) => _match[i];
+  int start() => _match.start;
+  int end() => _match.end;
 }

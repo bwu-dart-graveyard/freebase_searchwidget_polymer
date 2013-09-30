@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /**
- * *Warning*: this library is experimental, and APIs are subject to change.
+ * Support for observing changes in model-view architectures.
+ *
+ * **Warning:** This library is experimental, and APIs are subject to change.
  *
  * This library is used to observe changes to [Observable] types. It also
  * has helpers to make implementing and using [Observable] objects easy.
@@ -65,8 +67,8 @@
  *       print('done!');
  *     }
  *
- * [Tools](https://github.com/dart-lang/web-ui) exist to convert the first form
- * into the second form automatically, to get the best of both worlds.
+ * [Tools](https://www.dartlang.org/polymer-dart/) exist to convert the first
+ * form into the second form automatically, to get the best of both worlds.
  */
 library observe;
 

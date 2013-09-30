@@ -47,13 +47,30 @@ final _BOOLEAN_OPERATORS = ['!', '||', '&&'];
 /**
  * Evaluation [expr] in the context of [scope].
  */
-Object eval(Expression expr, Scope scope) => observe(expr, scope)._value;
+Object eval(Expression expr, Scope scope) {
+  var observer = observe(expr, scope);
+  new Updater(scope).visit(observer);
+  return observer._value;
+}
 
-
+/**
+ * Returns an [ExpressionObserver] that evaluates [expr] in the context of
+ * scope] and listens for any changes on [Observable] values that are
+ * returned from sub-expressions. When a value changes the expression is
+ * reevaluated and the new result is sent to the [onUpdate] stream of the
+ * [ExpressionObsserver].
+ */
 ExpressionObserver observe(Expression expr, Scope scope) {
   var observer = new ObserverBuilder(scope).visit(expr);
-  new Updater(scope).visit(observer);
   return observer;
+}
+
+/**
+ * Causes [expr] to be reevaluated a returns it's value.
+ */
+Object update(ExpressionObserver expr, Scope scope) {
+  new Updater(scope).visit(expr);
+  return expr.currentValue;
 }
 
 /**
@@ -166,7 +183,7 @@ class Scope extends Object {
     if (parent != null) {
       return _convert(parent[name]);
     } else {
-      throw new EvalException("variable not found: $name in $hashCode");
+      throw new EvalException("variable '$name' not found");
     }
   }
 
@@ -205,8 +222,6 @@ class Scope extends Object {
     }
     return false;
   }
-
-  String toString() => 'Scope($hashCode $parent)';
 }
 
 Object _convert(v) {
@@ -259,7 +274,7 @@ abstract class ExpressionObserver<E extends Expression> implements Expression {
   String toString() => _expr.toString();
 }
 
-class Updater extends RecursiveVisitor<ExpressionObserver> {
+class Updater extends RecursiveVisitor {
   final Scope scope;
 
   Updater(this.scope);
@@ -469,9 +484,12 @@ class BinaryObserver extends ExpressionObserver<BinaryOperator>
     var f = _BINARY_OPERATORS[operator];
     if (operator == '&&' || operator == '||') {
       _value = f(_toBool(left._value), _toBool(right._value));
+    } else if (operator == '==' || operator == '!=') {
+      _value = f(left._value, right._value);
+    } else if (left._value == null || right._value == null) {
+      _value = null;
     } else {
-      _value = (left._value == null || right._value == null)
-          ? null : f(left._value, right._value);
+      _value = f(left._value, right._value);
     }
   }
 
@@ -592,12 +610,16 @@ call(dynamic receiver, List args) {
 }
 
 /**
- * A comprehension declaration ("a in b").
+ * A comprehension declaration ("a in b"). [identifier] is the loop variable
+ * that's added to the scope during iteration. [iterable] is the set of
+ * objects to iterate over.
  */
 class Comprehension {
   final String identifier;
   final Iterable iterable;
-  Comprehension(this.identifier, this.iterable);
+
+  Comprehension(this.identifier, Iterable iterable)
+      : iterable = (iterable != null) ? iterable : const [];
 }
 
 /**
