@@ -39,11 +39,11 @@ void main() { ////<Key generated from https://code.google.com/apis/console>",
   FreebaseSearchwidget fbr = query('#freebase-searchwidget-right').xtag;
 
   // Example how to register for Freebase Searchwidget events
-  FreebaseSearchwidget.onFbTextChange.forTarget(fbl).listen((d) {
+  fbl.onFbTextChange.listen((d) {
       model.value = fbl.value;
       print(fbl.value);
     });
-  FreebaseSearchwidget.onFbSelect.forTarget(fbl).listen((d) {
+  fbl.onFbSelect.listen((d) {
     model.value = fbl.value;
     print(fbl.value);
   });
