@@ -11,7 +11,7 @@
 
 part of freebase_searchwidget;
 
-class Model extends ObservableBase{
+class Model extends Object with Observable {
   @observable
   String options = "";
   @observable

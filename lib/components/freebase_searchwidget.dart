@@ -51,8 +51,8 @@ import "dart:async";
 import "dart:convert";
 
 import "package:polymer/polymer.dart";
+
 import "package:animation/animation.dart";
-import "package:meta/meta.dart";
 
 part "model.dart";
 part "../src/data.dart";
@@ -64,7 +64,9 @@ part "../src/htmltools.dart";
 
 
 @CustomTag("freebase-searchwidget")
-class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
+class FreebaseSearchwidget extends PolymerElement {
+  FreebaseSearchwidget.created() : super.created();
+
 
 // TODO check if that or maybe a part of it is necessary/useful in Dart
 //  /**
@@ -128,11 +130,8 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
     "output":1
   };
 
-  @observable
-  String value = "";
-
-  @observable
-  String options = "";
+  @observable String value = "";
+  @observable String options = "";
 
   Option _options = new Option.defaults();
   Map<String,String> _status;
@@ -216,15 +215,10 @@ class FreebaseSearchwidget extends PolymerElement with ObservableMixin {
 
   bool get applyAuthorStyles => true;
   
-@override
-created() {
-  super.created();
-  
-}
   
 @override
-inserted() { 
-    super.inserted();
+void enteredView() { 
+    super.enteredView();
 
     _subscriptions = [ this._paneMouseDown,
                       this._paneMouseUp,
@@ -962,10 +956,11 @@ inserted() {
       else if (pos.x > (scroll_left + window_width/2)) {
         left = false;
       }
+      
       if (!left) {
-        left = pos.x - (pane_width - input_width);
-        if (left > scroll_left) {
-          pos = new Point(left, pos.y);
+        var leftPos = pos.x - (pane_width - input_width);
+        if (leftPos > scroll_left) {
+          pos = new Point(leftPos, pos.y);
         }
       }
 
@@ -1219,7 +1214,7 @@ inserted() {
   }
 
   @override
-  removed() {
+  leftView() {
     this._paneElement.remove();
     this._listElement.remove();
 
@@ -1237,7 +1232,7 @@ inserted() {
     this._inputElement.dataset.remove("requestCount");
     this._inputElement.dataset.remove("flyoutRequestCount");
 
-    super.removed();
+    super.leftView();
   }
 
   _shiftEnter(e) {
@@ -1307,6 +1302,7 @@ inserted() {
     var callsStr = this._inputElement.dataset["request.count.suggest"];
     int calls = callsStr != null ? int.parse(callsStr, radix: 10) : 0;
 
+    //window.console.log(url);
 
     var request = new HttpRequest();
     request
@@ -1455,8 +1451,8 @@ inserted() {
       searchInsteadElement.text = "Search instead for ";
       this._statusElement
         ..children.clear()
-        .append(searchInsteadElement)
-        .append(spell_link);
+        ..append(searchInsteadElement)
+        ..append(spell_link);
       HtmlTools.showElement(this._statusElement);
     }
 
