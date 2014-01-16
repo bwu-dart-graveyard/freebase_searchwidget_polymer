@@ -1,14 +1,16 @@
-name: freebase_searchwidget
-version: 0.2.2
+name: freebase_searchwidget_polymer
 author: Günter Zöchbauer <guenter@gzoechbauer.com>
-homepage: https://github.com/zoechi/dart-freebase-search-widget
+version: 0.2.2
+homepage: https://github.com/bwu-dart/freebase_searchwidget-polymer
 description: Dart port of Google's Freebase Suggest 4.2 Javascript/jQuery component.
 environment:
   sdk: '>= 1.0.0 < 2.0.0'
 dependencies:
-  polymer: any
   animation: any
   browser: any
-  
+  polymer: any
 dev_dependencies:
   unittest: any
+transformers:
+- polymer:
+    entry_points: null

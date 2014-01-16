@@ -13,7 +13,7 @@
 //import 'package:polymer/polymer.dart';
 import 'dart:html';
 import 'dart:async';
-import 'package:freebase_searchwidget/components/freebase_searchwidget.dart';
+import 'package:freebase_searchwidget_polymer/components/freebase_searchwidget.dart';
 // import 'package:mdv/mdv.dart' as mdv; // only for deployment
 
 
@@ -30,13 +30,13 @@ void main() { ////<Key generated from https://code.google.com/apis/console>",
 
   model.value = '';
 
-  var tmpl = query('#tmpl');
+  var tmpl = querySelector('#tmpl');
   tmpl.model = model;
-  
+
   Timer.run(() {
   //FreebaseSearchwidget fb = query('#freebase-searchwidget-left').xtag; // TODO change Dart bug is resolved
-  FreebaseSearchwidget fbl = query('#freebase-searchwidget-left').xtag;
-  FreebaseSearchwidget fbr = query('#freebase-searchwidget-right').xtag;
+  FreebaseSearchwidget fbl = querySelector('#freebase-searchwidget-left').xtag;
+  FreebaseSearchwidget fbr = querySelector('#freebase-searchwidget-right').xtag;
 
   // Example how to register for Freebase Searchwidget events
   fbl.onFbTextChange.listen((d) {
